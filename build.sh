@@ -1,7 +1,7 @@
 #!/bin/bash
 # build.sh - one-shot build of the PS5 Bazzite Deck image (kernel 7.3 + VCN + Game Mode + Wi-Fi fixes).
 # Run from the repo root, in WSL/Linux with Docker:   bash build.sh
-# Output: output/ps5-bazzite-deck-<RELEASE>.img.xz (+ .sha256, VERSIONS.md, local-changes.diff)
+# Output: output/ps5-bazzite-deck-<RELEASE>.img.7z.001/.002/.003 (+ .sha256, VERSIONS.md, local-changes.diff)
 set -euo pipefail
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"   # this repo
@@ -14,7 +14,7 @@ PATCHES_BRANCH=meower                  # rmuxnet/ps5-linux-patches-1, 7.3 port (
 KERNEL_TAG=v7.3
 
 [ -d "$REPO" ] && { echo "$REPO already exists. Remove it (rm -rf $REPO) or change REPO at the top of this script."; exit 1; }
-for t in git docker xz sha256sum losetup; do command -v $t >/dev/null || { echo "missing tool: $t"; exit 1; }; done
+for t in git docker 7z sha256sum losetup; do command -v $t >/dev/null || { echo "missing tool: $t"; exit 1; }; done
 
 echo "==> 1. builder ($BUILDER_COMMIT)"
 git clone -q https://github.com/ps5-linux/ps5-linux-image "$REPO"
@@ -46,6 +46,7 @@ sed -i 's/^# CONFIG_DEBUG_INFO_BTF is not set/CONFIG_DEBUG_INFO_BTF=y/' work/ps5
 grep -q '^CONFIG_DEBUG_INFO_BTF=y' work/ps5-linux-patches/.config || echo 'CONFIG_DEBUG_INFO_BTF=y' >> work/ps5-linux-patches/.config
 git clone -q --branch "$KERNEL_TAG" --depth 1 https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git work/linux73
 git -C work/linux73 apply --exclude=Makefile ../ps5-linux-patches/linux.patch
+git -C work/linux73 apply "$SRC/patches/ps5-btusb-quirks-fix.patch"   # Bluetooth: PS5 quirks must live in btusb quirks_table
 cp work/ps5-linux-patches/.config work/linux73/.config
 cp -r work/ps5-linux-patches work/linux73/ps5-linux-patches
 grep -E '^CONFIG_LSM=|^CONFIG_DEBUG_INFO_BTF=' work/linux73/.config
@@ -78,7 +79,7 @@ cat > output/VERSIONS.md << V
 |---|---|
 | Bazzite Deck | \`ghcr.io/ublue-os/bazzite-deck:stable\` @ \`$BAZZITE_DIGEST\` |
 | Linux kernel | \`$KERNEL_TAG\` (kernel.org stable) |
-| PS5 kernel patches | rmuxnet/ps5-linux-patches-1 \`$PATCHES_BRANCH\` @ \`$(git -C work/ps5-linux-patches rev-parse --short HEAD)\` |
+| PS5 kernel patches | rmuxnet/ps5-linux-patches-1 \`$PATCHES_BRANCH\` @ \`$(git -C work/ps5-linux-patches rev-parse --short HEAD)\` + patches/ps5-btusb-quirks-fix.patch |
 | Image builder | ps5-linux/ps5-linux-image @ \`$BUILDER_COMMIT\` + local-changes.diff |
 | IW620 Wi-Fi patches | ps5-linux/ps5-linux-mwifiex \`main\` @ \`$(git ls-remote https://github.com/ps5-linux/ps5-linux-mwifiex.git main | cut -c1-7)\` + patches/ps5-iw620-kernel73-compat.patch |
 | NXP mwifiex base driver | \`lf-6.18.2_1.0.0\` |
@@ -88,17 +89,15 @@ cat > output/VERSIONS.md << V
 V
 cat output/VERSIONS.md
 
-echo "==> 7. compress"
+echo "==> 7. package as 7-Zip volumes (GitHub caps assets at 2 GB)"
 NAME="ps5-bazzite-deck-$RELEASE"
-xz -T0 -6 -k -v "$IMG" || [ -f "$IMG.xz" ]
-mv "$IMG.xz" "output/$NAME.img.xz"
-(cd output && sha256sum "$NAME.img.xz" > "$NAME.img.xz.sha256")
-split -b 1900M "output/$NAME.img.xz" "output/$NAME.img.xz.part-"
-(cd output && sha256sum $NAME.img.xz.part-* >> "$NAME.img.xz.sha256")
+rm -f output/$NAME.img.7z.*
+7z a -mx=5 -mmt=on -v1900m "output/$NAME.img.7z" "$IMG" >/dev/null
+(cd output && sha256sum $NAME.img.7z.* > "$NAME.sha256")
 git diff > output/local-changes.diff
-cp extra-patches/ps5-iw620-kernel73-compat.patch output/
+cp "$SRC"/patches/*.patch output/
 
 echo
 echo "DONE. Release assets in $REPO/output:"
-ls -lh output/$NAME.img.xz.part-* output/$NAME.img.xz.sha256 output/VERSIONS.md output/local-changes.diff output/ps5-iw620-kernel73-compat.patch
+ls -lh output/$NAME.img.7z.* output/$NAME.sha256 output/VERSIONS.md output/local-changes.diff output/*.patch
 echo "Flash output/ps5-bazzite-deck.img (raw) to test. On the PS5: uname -r, systemctl status cardwired, nmcli device"
