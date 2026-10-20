@@ -18,7 +18,7 @@ actually work on the PS5.
 | Display | 4K60 and HDR on an LG C4; the mode is negotiated at boot and can't be changed afterwards |
 | Hardware video decode/encode (VCN) | H.264, HEVC, VP9, VC-1, MPEG-2 decode; H.264 encode (HEVC encode I-frame only) |
 | Wi-Fi (NXP IW620) | driver included, firmware staged at boot from the loader; `ps_mode=0` set for stability |
-| Bluetooth | re-enabled by the 7.3 kernel patches |
+| Bluetooth | **not working**: the controller enumerates (USB `1286:2059`) but never initializes, no firmware loader in Linux yet. Use USB for the DualSense, or a USB Bluetooth dongle |
 | Kernel | Linux 7.3 (see [Releases](../../releases) for the exact version per image) |
 
 Tested on: PS5 fat (CFI-10xx) · firmware 13.60 · [soniciso1 loader](https://github.com/soniciso1/ps5-linux-loader) v13.60 · LG C4 @ 4K60.
