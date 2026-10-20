@@ -94,6 +94,9 @@ notes repeat the important ones. `CHANGELOG.md` tracks changes between releases.
 
 ## Known limitations
 
+- First boot is slow and the screen can stay black for a while; from the second boot on it's normal.
+- On the very first boot, Steam's "connect to the internet" step may fail for Ethernet and Wi-Fi. Skip it or reboot; it works afterwards.
+
 - Not booted via ostree: `rpm-ostree` and `ujust update` don't work; `dnf5 install` does
   (the root is a plain ext4 filesystem). Treat Bazzite updates as unsupported.
 - `video=DP-1:1920x1080@60` in `cmdline.txt` is ignored by the kernel; the display runs at the mode

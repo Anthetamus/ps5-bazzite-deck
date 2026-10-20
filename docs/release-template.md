@@ -31,7 +31,8 @@
 Check on the PS5: `uname -r`, `systemctl status cardwired` (active = Game Mode works), `vainfo`, `nmcli device`.
 
 ## Known issues
-- none so far
+- **First boot is slow and the screen can stay black for a while.** Don't panic, give it a few minutes.
+- **On the very first boot, Steam's "connect to the internet" step may fail** for both Ethernet and Wi-Fi even though networks are listed. Skip it or reboot; from the second boot on, networking works normally.
 
 ## Files
 - `ps5-bazzite-deck-v1.0.2.img.xz.part-aa/ab/ac` – image (rejoin, see above)
