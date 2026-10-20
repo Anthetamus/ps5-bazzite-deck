@@ -1,0 +1,8 @@
+# build happens outside the repo (~/ps5-build-7.3); nothing large belongs here
+*.img
+*.img.xz
+*.part-*
+output/
+work/
+fix-wifi.sh
+fix-bluetooth.sh
