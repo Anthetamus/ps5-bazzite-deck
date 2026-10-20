@@ -55,9 +55,7 @@ echo "==> 4. build image (long)"
 IMG=output/ps5-bazzite-deck.img
 [ -f "$IMG" ] || { echo "build did not produce $IMG, see build.log"; exit 1; }
 
-echo "==> 5. post-build: driver option, fix scripts (needs sudo)"
-curl -fsSL https://repo.etawen.dev/fix-wifi.sh -o fix-wifi.sh
-curl -fsSL https://repo.etawen.dev/fix-bluetooth.sh -o fix-bluetooth.sh
+echo "==> 5. post-build: cmdline check + Wi-Fi driver option (needs sudo)"
 LOOP=$(sudo losetup -fP --show "$IMG")
 BOOT=/mnt/ps5boot; ROOT=/mnt/ps5root
 sudo mkdir -p "$BOOT" "$ROOT"
@@ -68,25 +66,6 @@ sudo mount "${LOOP}p1" "$ROOT"      # ext4 root
 grep -q "lsm=" "$BOOT/cmdline.txt" || sudo sed -i 's/[[:space:]]*$/ lsm=landlock,lockdown,yama,integrity,apparmor,bpf/' "$BOOT/cmdline.txt"
 echo "    cmdline: $(cat "$BOOT/cmdline.txt")"
 echo "options moal ps_mode=0" | sudo tee "$ROOT/etc/modprobe.d/ps5-iw620.conf" >/dev/null
-sudo install -Dm755 fix-wifi.sh      "$ROOT/usr/local/sbin/ps5-fix-wifi.sh"
-sudo install -Dm755 fix-bluetooth.sh "$ROOT/usr/local/sbin/ps5-fix-bluetooth.sh"
-sudo tee "$ROOT/etc/systemd/system/ps5-firstboot-fixes.service" >/dev/null << 'UNIT'
-[Unit]
-Description=PS5 first-boot Wi-Fi/Bluetooth fixes (repo.etawen.dev scripts)
-ConditionPathExists=!/var/lib/ps5-firstboot-fixes.done
-After=local-fs.target
-Before=NetworkManager.service bluetooth.service
-
-[Service]
-Type=oneshot
-ExecStart=/bin/bash -c '/usr/local/sbin/ps5-fix-wifi.sh; /usr/local/sbin/ps5-fix-bluetooth.sh; touch /var/lib/ps5-firstboot-fixes.done'
-RemainAfterExit=yes
-
-[Install]
-WantedBy=multi-user.target
-UNIT
-sudo mkdir -p "$ROOT/etc/systemd/system/multi-user.target.wants"
-sudo ln -sf /etc/systemd/system/ps5-firstboot-fixes.service "$ROOT/etc/systemd/system/multi-user.target.wants/ps5-firstboot-fixes.service"
 sync
 cleanup; trap - EXIT
 
@@ -104,7 +83,6 @@ cat > output/VERSIONS.md << V
 | IW620 Wi-Fi patches | ps5-linux/ps5-linux-mwifiex \`main\` @ \`$(git ls-remote https://github.com/ps5-linux/ps5-linux-mwifiex.git main | cut -c1-7)\` + patches/ps5-iw620-kernel73-compat.patch |
 | NXP mwifiex base driver | \`lf-6.18.2_1.0.0\` |
 | IW620 firmware | not in the image; pcieuartiw620_combo_v1.bin is staged at boot from the loader's boot partition (ps5-stage-firmware) |
-| First-boot fix scripts | repo.etawen.dev fix-wifi.sh (sha256 \`$(sha256sum fix-wifi.sh | cut -c1-12)…\`), fix-bluetooth.sh (sha256 \`$(sha256sum fix-bluetooth.sh | cut -c1-12)…\`) |
 | Kernel config changes | CONFIG_LSM += bpf, CONFIG_DEBUG_INFO_BTF=y |
 | cmdline.txt | $(sed 's/__DISTRO__/bazzite-deck/' boot/cmdline.txt) |
 V
@@ -112,7 +90,7 @@ cat output/VERSIONS.md
 
 echo "==> 7. compress"
 NAME="ps5-bazzite-deck-$RELEASE"
-xz -T0 -6 -k -v "$IMG"
+xz -T0 -6 -k -v "$IMG" || [ -f "$IMG.xz" ]
 mv "$IMG.xz" "output/$NAME.img.xz"
 (cd output && sha256sum "$NAME.img.xz" > "$NAME.img.xz.sha256")
 split -b 1900M "output/$NAME.img.xz" "output/$NAME.img.xz.part-"

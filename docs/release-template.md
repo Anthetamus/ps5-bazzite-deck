@@ -1,12 +1,11 @@
-<!-- Release title:  v1.0.0 – Linux 7.3, Game Mode, Wi-Fi + Bluetooth -->
+<!-- Release title:  v1.0.2 – Linux 7.3, Game Mode, Wi-Fi + Bluetooth -->
 
 **Tested:** PS5 fat (CFI-10xx) · FW 13.60 · soniciso1 loader v13.60 · LG C4 4K60 · Game Mode, Wi-Fi, Bluetooth
 
 ## What's new
 - Linux 7.3 with rmuxnet 7.3 PS5 patches (`meower` @ 36f173f): VCN video decode/encode, Bluetooth re-enabled
 - **Game Mode works**: `bpf` added to `CONFIG_LSM`, `CONFIG_DEBUG_INFO_BTF=y` (fixes `cardwired`), `lsm=…,bpf` also in `cmdline.txt`
-- Wi-Fi: PS5 IW620 driver with kernel 7.2/RTNL patches + new kernel 7.3 compat patch, `ps_mode=0` (firmware is staged at boot from the loader by the builder’s ps5-stage-firmware service, not shipped in the image)
-- First-boot service running repo.etawen.dev `fix-wifi.sh` / `fix-bluetooth.sh` once
+- Wi-Fi: PS5 IW620 driver with kernel 7.2/RTNL patches + new kernel 7.3 compat patch, `ps_mode=0` (firmware is staged at boot from the loader by the builder's ps5-stage-firmware service, not shipped in the image)
 - Builder: ps5-linux-image @ 52db0a4 + fixes (VCN firmware mount, Wi-Fi patch order)
 
 ## Versions
@@ -25,8 +24,8 @@
 
 
 ## Install
-1. Verify: `sha256sum -c ps5-bazzite-deck-v1.0.0.img.xz.sha256`
-2. Rejoin: `cat ps5-bazzite-deck-v1.0.0.img.xz.part-* > ps5-bazzite-deck-v1.0.0.img.xz`
+1. Verify: `sha256sum -c ps5-bazzite-deck-v1.0.2.img.xz.sha256`
+2. Rejoin: `cat ps5-bazzite-deck-v1.0.2.img.xz.part-* > ps5-bazzite-deck-v1.0.2.img.xz`
 3. `xz -d` it, flash to a 32 GB+ USB/SSD, boot with the loader.
 
 Check on the PS5: `uname -r`, `systemctl status cardwired` (active = Game Mode works), `vainfo`, `nmcli device`.
@@ -35,8 +34,8 @@ Check on the PS5: `uname -r`, `systemctl status cardwired` (active = Game Mode w
 - none so far
 
 ## Files
-- `ps5-bazzite-deck-v1.0.0.img.xz.part-aa/ab/ac` – image (rejoin, see above)
-- `ps5-bazzite-deck-v1.0.0.img.xz.sha256` – checksums of the parts and the joined file
+- `ps5-bazzite-deck-v1.0.2.img.xz.part-aa/ab/ac` – image (rejoin, see above)
+- `ps5-bazzite-deck-v1.0.2.img.xz.sha256` – checksums of the parts and the joined file
 - `VERSIONS.md` – exact upstream pins
 - `local-changes.diff` – changes applied to the upstream image builder
 - `ps5-iw620-kernel73-compat.patch` – Wi-Fi driver patch for kernel 7.3

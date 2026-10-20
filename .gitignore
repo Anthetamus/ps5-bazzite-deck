@@ -4,5 +4,3 @@
 *.part-*
 output/
 work/
-fix-wifi.sh
-fix-bluetooth.sh

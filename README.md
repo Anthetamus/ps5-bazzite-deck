@@ -18,7 +18,7 @@ actually work on the PS5.
 | Display | 4K60 and HDR on an LG C4; the mode is negotiated at boot and can't be changed afterwards |
 | Hardware video decode/encode (VCN) | H.264, HEVC, VP9, VC-1, MPEG-2 decode; H.264 encode (HEVC encode I-frame only) |
 | Wi-Fi (NXP IW620) | driver included, firmware staged at boot from the loader; `ps_mode=0` set for stability |
-| Bluetooth | 7.3 kernel patches re-enable it; `fix-bluetooth.sh` runs on first boot |
+| Bluetooth | re-enabled by the 7.3 kernel patches |
 | Kernel | Linux 7.3 (see [Releases](../../releases) for the exact version per image) |
 
 Tested on: PS5 fat (CFI-10xx) · firmware 13.60 · [soniciso1 loader](https://github.com/soniciso1/ps5-linux-loader) v13.60 · LG C4 @ 4K60.
@@ -34,7 +34,7 @@ MediaTek MT7921 Wi-Fi (newer chassis) is **not** supported by any PS5 Linux kern
    xz -d ps5-bazzite-deck-vX.Y.Z.img.xz
    ```
 3. Flash the `.img` to a USB drive or SSD of 32 GB or more (`dd`, Balena Etcher, Rufus in DD mode).
-4. Boot with the PS5 Linux loader as usual. First boot takes a little longer (Wi-Fi/Bluetooth fix scripts run once).
+4. Boot with the PS5 Linux loader as usual.
 
 Check on the PS5: `uname -r` (kernel), `systemctl status cardwired` (must be *active* for Game Mode),
 `vainfo` (video decode), `nmcli device` (Wi-Fi).
@@ -58,7 +58,7 @@ Full write-up: [docs/game-mode-fix.md](docs/game-mode-fix.md).
 ## What's in this repo
 
 ```
-build.sh                               one-shot build: clone builder, apply fixes, build, bake post-build fixes, compress
+build.sh                               one-shot build: clone builder, apply fixes, build, post-build, compress
 patches/ps5-iw620-kernel73-compat.patch kernel 7.3 compatibility for the PS5 IW620 Wi-Fi driver (cfg80211 API changes)
 docs/game-mode-fix.md                  how the Game Mode problem was found and fixed
 docs/release-template.md               release notes template
@@ -69,7 +69,7 @@ CHANGELOG.md
 in each release): mounts the patches directory into the kernel build so the VCN firmware is found,
 applies the kernel 7.2/7.3 and RTNL patches to the Wi-Fi driver, and adds `lsm=…,bpf` to `cmdline.txt`.
 It then builds Linux 7.3 with rmuxnet's 7.3 PS5 patches, the two config fixes above, bakes the Wi-Fi
-driver option and first-boot fix scripts into the image, and produces the release files.
+driver option (`ps_mode=0`) into the image, and produces the release files.
 
 ### Building it yourself
 
@@ -111,7 +111,7 @@ notes repeat the important ones. `CHANGELOG.md` tracks changes between releases.
 - **[soniciso1](https://github.com/soniciso1)** – loader with firmware 13.60 support.
 - **[ps5-linux-mwifiex](https://github.com/ps5-linux/ps5-linux-mwifiex)** contributors (masterzorag,
   dmemarko and others) – PS5 IW620 Wi-Fi driver patches.
-- **[etawen](https://repo.etawen.dev/)** – PS5 package repo and the Wi-Fi/Bluetooth fix scripts.
+- **[etawen](https://repo.etawen.dev/)** – PS5 package repo and documentation.
 - **[Universal Blue / Bazzite](https://github.com/ublue-os/bazzite)** – Bazzite itself.
 - **Gilles ([@VivaLaVent](https://github.com/VivaLaVent))** – diagnosed why Bazzite Deck's Game Mode fails on the PS5
   (`cardwired`, BPF LSM + BTF), the config and cmdline fixes, the kernel 7.3 Wi-Fi driver compatibility
