@@ -7,8 +7,7 @@ actually work on the PS5.
 > This repo holds the build script, patches and documentation. **Images are published under
 > [Releases](../../releases)**; every release lists the exact upstream versions it was built from.
 
-<!-- Replace with your own photo/screenshot of the PS5 running Game Mode -->
-![PS5 running Bazzite Game Mode](docs/images/game-mode.jpg)
+Questions, test reports, help: **[Discord](https://discord.gg/f8QARgNkf5)**
 
 ## What works
 
@@ -120,3 +119,7 @@ notes repeat the important ones. `CHANGELOG.md` tracks changes between releases.
 Scripts and documentation in this repo: MIT. `patches/*.patch` modify GPL-2.0 code and are GPL-2.0.
 Images contain software under many licenses (Linux, Bazzite/Fedora packages, Steam). Not affiliated
 with Sony, Valve or Universal Blue. Use at your own risk.
+
+## Community / support
+
+Discord: https://discord.gg/f8QARgNkf5 — test reports, questions, and the hotfix testing threads live there.

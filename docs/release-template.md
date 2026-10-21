@@ -44,3 +44,6 @@ sudo cp /path/to/btusb.ko /usr/lib/modules/$(uname -r)/kernel/drivers/bluetooth/
 - `ps5-iw620-kernel73-compat.patch` – Wi-Fi driver patch for kernel 7.3
 - `ps5-btusb-quirks-fix.patch` – Bluetooth fix (kernel patch)
 - `btusb.ko` – hotfix module for v1.0.2 (same kernel 7.3.0 build)
+
+---
+Questions, bug reports, test results: **Discord https://discord.gg/f8QARgNkf5**
