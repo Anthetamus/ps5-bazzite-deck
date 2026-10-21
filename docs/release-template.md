@@ -1,9 +1,14 @@
 <!-- Release title:  v1.0.4 – Wi-Fi fixes, MediaTek support (untested), fan + HDMI audio fixes -->
 
-**Tested:** PS5 fat (CFI-10xx) · FW 13.60 · soniciso1 loader v13.60 · LG C4 4K60 · `<what you verified>` · MediaTek consoles: **not tested**
+**Tested:** PS5 fat (CFI-10xx) · FW 13.60 · soniciso1 loader v13.60 · LG C4 4K60 · Game Mode, Wi-Fi, Bluetooth (DualSense), VCN, 4K60 · MediaTek consoles: **not tested**
 
 ## What's new
-- `<bullet list, copy from CHANGELOG.md>`
+- Rebuilt on current Bazzite Deck stable and rmux's latest 7.3 PS5 patches (`meower` HEAD): fan autoservo fix, boot fan target set by the kernel
+- HDMI audio stability fix for FLAVA3 HDMI chips (upstream ps5-linux-patches #42, ported to 7.3)
+- Wi-Fi (NXP IW620): driver rebuilt with the upstream HE capability + TX fixes; built with objtool metadata (removes the kernel warning at boot)
+- Wi-Fi: NetworkManager keeps the permanent MAC during scans (fixes GUI Wi-Fi joins and the first-boot "connect to the internet" failure)
+- **MediaTek MT7921 (PS5 Slim / newer) support, untested:** Wi-Fi driver enabled (`CONFIG_MT7921E=m`); Bluetooth: WizGery's btusb bulk-OUT fix (ported to 7.3) and L2CAP defer-security patch, plus udev/modprobe rules. One image for all models; drivers bind by hardware ID
+- Boot: dropped the ignored `video=DP-1:1920x1080@60` from `cmdline.txt` (was logging "User-defined mode not supported" on every boot)
 
 Still included from v1.0.3: Game Mode fix (`bpf` LSM + BTF), kernel 7.3 Wi-Fi compat patch, Bluetooth `btusb` quirks-table fix.
 
@@ -14,7 +19,20 @@ Still included from v1.0.3: Game Mode fix (`bpf` LSM + BTF), kernel 7.3 Wi-Fi co
 - Not booted via ostree: `dnf5 install` works, `rpm-ostree`/`ujust update` don't; a full `dnf5 upgrade` is untested.
 
 ## Versions
-`<paste the table from VERSIONS.md>`
+| Component | Version / commit |
+|---|---|
+| Bazzite Deck | `ghcr.io/ublue-os/bazzite-deck:stable` @ `sha256:96301a1520b5bb63db95640896300c10ae3b1fcf8bf10681af154514395e1634` |
+| Linux kernel | `v7.3` (kernel.org stable) |
+| PS5 kernel patches | rmuxnet/ps5-linux-patches-1 `meower` @ `c104b34` + patches/ps5-btusb-quirks-fix.patch |
+| Image builder | ps5-linux/ps5-linux-image @ `52db0a4` + local-changes.diff |
+| IW620 Wi-Fi patches | ps5-linux/ps5-linux-mwifiex `main` @ `4bce848` + patches/ps5-iw620-kernel73-compat.patch |
+| NXP mwifiex base driver | `lf-6.18.2_1.0.0` |
+| IW620 firmware | not in the image; pcieuartiw620_combo_v1.bin is staged at boot from the loader's boot partition (ps5-stage-firmware) |
+| Kernel config changes | CONFIG_LSM += bpf, CONFIG_DEBUG_INFO_BTF=y, CONFIG_MT7921E=m |
+| Extra kernel patches | ps5-btusb-quirks-fix, ps5-hdmi-audio-flava3, ps5-mt7921-btusb-bulk-out, ps5-mt7921-l2cap-defer-security (patches/) |
+| Image config | NetworkManager stable MAC (IW620), MediaTek BT udev + modprobe (files/) |
+| cmdline.txt | root=LABEL=bazzite-deck rw rootwait console=ttyTitania0 console=tty0 mitigations=off idle=halt preempt=full lsm=landlock,lockdown,yama,integrity,apparmor,bpf |
+
 
 ## Install
 1. Download all `.7z.00*` files into one folder.
