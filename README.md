@@ -21,7 +21,7 @@ Questions, test reports, help: **[Discord](https://discord.gg/f8QARgNkf5)**
 | Kernel | Linux 7.3 (see [Releases](../../releases) for the exact version per image) |
 
 Tested on: PS5 fat (CFI-10xx) · firmware 13.60 · [soniciso1 loader](https://github.com/soniciso1/ps5-linux-loader) v13.60 · LG C4 @ 4K60.
-MediaTek MT7921 Wi-Fi (newer chassis) is **not** supported by any PS5 Linux kernel yet.
+MediaTek (PS5 Slim / newer) support is included from v1.0.4 but has not been tested on hardware; reports welcome.
 
 ## Install
 
@@ -57,6 +57,9 @@ Full write-up: [docs/game-mode-fix.md](docs/game-mode-fix.md).
 build.sh                               one-shot build: clone builder, apply fixes, build, post-build, compress
 patches/ps5-iw620-kernel73-compat.patch kernel 7.3 compatibility for the PS5 IW620 Wi-Fi driver (cfg80211 API changes)
 patches/ps5-btusb-quirks-fix.patch     Bluetooth: PS5 IW620 btusb quirks moved to quirks_table (fixes init failure)
+patches/ps5-hdmi-audio-flava3.patch     HDMI audio stability for FLAVA3 HDMI chips (upstream #42, 7.3 port)
+patches/ps5-mt7921-*.patch              MediaTek Bluetooth (WizGery 0003 ported to 7.3, 0004)
+files/                                  config files baked into the image (NetworkManager stable MAC, MediaTek BT udev/modprobe)
 docs/game-mode-fix.md                  how the Game Mode problem was found and fixed
 docs/release-template.md               release notes template
 CHANGELOG.md
@@ -93,8 +96,8 @@ notes repeat the important ones. `CHANGELOG.md` tracks changes between releases.
 
 - Not booted via ostree: `rpm-ostree` and `ujust update` don't work; `dnf5 install` does
   (the root is a plain ext4 filesystem). Treat Bazzite updates as unsupported.
-- `video=DP-1:1920x1080@60` in `cmdline.txt` is ignored by the kernel; the display runs at the mode
-  negotiated at boot. Switching to a text console (Ctrl+Alt+F3) drops the signal.
+- The display runs at the mode negotiated at boot and can't be changed afterwards. Switching to a text
+  console (Ctrl+Alt+F3) drops the signal.
 - The Game Mode menu renders at 1080p and is upscaled (same as on any Bazzite HTPC); games run at the
   resolution set in Steam → Settings → Display.
 - HEVC encode is I-frame only; use H.264 for streaming/recording.
