@@ -98,8 +98,8 @@ notes repeat the important ones. `CHANGELOG.md` tracks changes between releases.
   (the root is a plain ext4 filesystem). Treat Bazzite updates as unsupported.
 - The display runs at the mode negotiated at boot and can't be changed afterwards. Switching to a text
   console (Ctrl+Alt+F3) drops the signal.
-- The Game Mode menu renders at 1080p and is upscaled (same as on any Bazzite HTPC); games run at the
-  resolution set in Steam → Settings → Display.
+- On first boot, adjust the display settings in Game Mode (Settings → Display): disable HDR and set a
+  higher resolution. The display mode itself is negotiated at boot and can't be changed afterwards.
 - HEVC encode is I-frame only; use H.264 for streaming/recording.
 
 ## Credits

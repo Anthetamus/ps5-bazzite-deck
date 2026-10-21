@@ -14,7 +14,7 @@ Still included from v1.0.3: Game Mode fix (`bpf` LSM + BTF), kernel 7.3 Wi-Fi co
 
 ## Known issues
 - First boot is slow; the screen can stay black for a while. On the first boot Wi-Fi can connect and then drop after about a minute; reboot once if that happens.
-- Display mode is locked at boot; the Game Mode UI renders at 1080p (games follow Steam's resolution setting).
+- On first boot, adjust the display settings in Game Mode (Settings → Display): disable HDR and set a higher resolution. The display mode itself is negotiated at boot and can't be changed afterwards.
 - HEVC encode is I-frame only.
 - Not booted via ostree: `dnf5 install` works, `rpm-ostree`/`ujust update` don't; a full `dnf5 upgrade` is untested.
 
