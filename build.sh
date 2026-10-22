@@ -60,6 +60,10 @@ git -C work/linux73 apply "$SRC/patches/ps5-btusb-quirks-fix.patch"   # Bluetoot
 git -C work/linux73 apply "$SRC/patches/ps5-hdmi-audio-flava3.patch"      # HDMI audio stability (upstream #42 ported to 7.3)
 git -C work/linux73 apply "$SRC/patches/ps5-mt7921-btusb-bulk-out.patch"   # MediaTek BT: ACL on bulk OUT 0x02 (WizGery 0003, 7.3 port)
 git -C work/linux73 apply "$SRC/patches/ps5-mt7921-l2cap-defer-security.patch"  # MediaTek BT: L2CAP defer security while encryption pending (WizGery 0004)
+git -C work/linux73 apply "$SRC/patches/ps5-hdmi-hotplug-pr43.patch"     # HDMI hotplug (ps5-linux-patches #43, ported to 7.3)
+git -C work/linux73 apply "$SRC/patches/ps5-hdmi-rearm-pr46.patch"       # re-arm HDMI bridge when the same display wakes up (#46, on top of #43)
+git -C work/linux73 apply "$SRC/patches/ps5-hdmi-flava3-scrambling-off.patch"  # FLAVA3: turn scrambling off again below 340 MHz (no signal after 4K -> 1080p)
+git -C work/linux73 apply "$SRC/patches/ps5-hdmi-1440p120-experimental.patch"  # opt-in 1440p120 (hdmi.allow_1440p120=1)
 cp work/ps5-linux-patches/.config work/linux73/.config
 cp -r work/ps5-linux-patches work/linux73/ps5-linux-patches
 grep -E '^CONFIG_LSM=|^CONFIG_DEBUG_INFO_BTF=|^CONFIG_MT7921E=' work/linux73/.config
@@ -89,7 +93,8 @@ cleanup; trap - EXIT
 
 echo "==> 6. record exact versions"
 SKOPEO_OUT="$(docker run --rm quay.io/skopeo/stable inspect docker://ghcr.io/ublue-os/bazzite-deck:stable 2>/dev/null || true)"
-BAZZITE_DIGEST="$(printf '%s' "$SKOPEO_OUT" | grep -m1 '"Digest"' | sed 's/.*"sha256:\([0-9a-f]*\)".*/sha256:\1/')"; [ -n "$BAZZITE_DIGEST" ] || BAZZITE_DIGEST=unknown
+# no pipe here: with pipefail, grep -m1 closing the pipe early would abort the script
+BAZZITE_DIGEST="$(sed -n '/"Digest"/{s/.*"\(sha256:[0-9a-f]*\)".*/\1/p;q}' <<<"$SKOPEO_OUT")"; [ -n "$BAZZITE_DIGEST" ] || BAZZITE_DIGEST=unknown
 cat > output/VERSIONS.md << V
 # Versions in release $RELEASE (built $(date -u +%Y-%m-%d))
 
@@ -103,8 +108,8 @@ cat > output/VERSIONS.md << V
 | NXP mwifiex base driver | \`lf-6.18.2_1.0.0\` |
 | IW620 firmware | not in the image; pcieuartiw620_combo_v1.bin is staged at boot from the loader's boot partition (ps5-stage-firmware) |
 | Kernel config changes | CONFIG_LSM += bpf, CONFIG_DEBUG_INFO_BTF=y, CONFIG_MT7921E=m |
-| Extra kernel patches | ps5-btusb-quirks-fix, ps5-hdmi-audio-flava3, ps5-mt7921-btusb-bulk-out, ps5-mt7921-l2cap-defer-security (patches/) |
-| Image config | NetworkManager stable MAC (IW620), MediaTek BT udev + modprobe (files/) |
+| Extra kernel patches | ps5-btusb-quirks-fix, ps5-hdmi-audio-flava3, ps5-mt7921-btusb-bulk-out, ps5-mt7921-l2cap-defer-security, ps5-hdmi-hotplug-pr43, ps5-hdmi-rearm-pr46, ps5-hdmi-flava3-scrambling-off, ps5-hdmi-1440p120-experimental (patches/) |
+| Image config | NetworkManager stable MAC (IW620), MediaTek BT udev + modprobe, ps5-stage-firmware boot-cycle drop-in (files/) |
 | cmdline.txt | $(sed 's/__DISTRO__/bazzite-deck/' boot/cmdline.txt) |
 V
 cat output/VERSIONS.md

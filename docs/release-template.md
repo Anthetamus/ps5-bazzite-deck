@@ -1,23 +1,21 @@
-<!-- Release title:  v1.0.5 – boot fix (random missing Wi-Fi / desktop), MediaTek Wi-Fi confirmed -->
+<!-- Release title:  v1.0.6 – HDMI wake-up + hotplug, 1080p120, 1440p120 (experimental) -->
 
-**Tested:** PS5 fat (CFI-10xx) · FW 13.60 · soniciso1 loader v13.60 · LG C4 4K60 · Game Mode, Wi-Fi, Bluetooth (DualSense), VCN, 4K60 · MediaTek: Wi-Fi confirmed by a Slim tester
+**Tested:** PS5 fat (CFI-10xx), FW 13.60, LG C4 (FLAVA3): boot, TV wake-up, HDMI re-plug, 4K60 to 1080p120 switch, 1440p120
 
 ## What's new
-- **Fix: services randomly missing after the first reboot** (no Wi-Fi/Ethernet, Switch to Desktop dropping back to Game Mode). A boot service was ordered in a loop; systemd broke the loop by skipping a different service each boot. Affected v1.0.3 and v1.0.4 on all models. On v1.0.4? See below, no reflash needed
-- MediaTek Wi-Fi (PS5 Slim) confirmed working by a tester
+- **Picture comes back when your TV/monitor wakes up.** Fixes black screens when the display was already on while Linux booted, after standby, or after turning the display off and on. ([ps5-linux-patches #46](https://github.com/ps5-linux/ps5-linux-patches/pull/46) by rdmrocha)
+- **Switching displays works.** Plugging in a different TV/monitor or re-plugging the HDMI cable is detected, and picture and sound are set up again. ([ps5-linux-patches #43](https://github.com/ps5-linux/ps5-linux-patches/pull/43))
+- **No more "no signal" when switching down from 4K**, e.g. to 1080p or **1080p120**.
+- **1440p120 (experimental, off by default).** If your TV/monitor offers it: on the USB drive's small FAT32 partition, add ` hdmi.allow_1440p120=1` at the end of the line in `cmdline.txt`, boot, and pick 2560×1440 @ 120 Hz in **desktop** System Settings → Display (it reverts by itself if the screen stays black). Tested on a FLAVA3 console; on Verde consoles it's untested, please report (`dmesg | grep "HDMI IC Type"` shows which one you have).
 
-### Already on v1.0.4? No need to reflash
-v1.0.5 is v1.0.4 plus this one fix. Open a terminal (desktop → Konsole, or Ctrl+Alt+F2 if your TV keeps the picture), run this and it reboots:
-```
-sudo mkdir -p /etc/systemd/system/ps5-stage-firmware.service.d && printf '[Unit]\nDefaultDependencies=no\nConflicts=shutdown.target\nBefore=shutdown.target\n' | sudo tee /etc/systemd/system/ps5-stage-firmware.service.d/10-no-default-deps.conf >/dev/null && sudo systemctl daemon-reload && sudo reboot
-```
-After the reboot, `journalctl -b --no-pager | grep -c "ordering cycle"` should print `0`. The default password is `ps5`.
+If the picture goes wrong with this version, the wake-up fix can be switched off: add ` hdmi.rearm=0` to `cmdline.txt`.
+
+Coming from v1.0.5 or older: this needs a reflash (it's a kernel change).
 
 ## Known issues
-- First boot is slow; the screen can stay black for a while.
-- On first boot, adjust the display settings in Game Mode (Settings → Display): disable HDR and set a higher resolution.
+- First boot is slow; the screen can stay black for a while. If it stays black, reboot once.
+- On first boot, adjust the display settings in Game Mode (Settings → Display): disable HDR and set your resolution.
 - HEVC encode is I-frame only.
-- Not booted via ostree: `dnf5 install` works, `rpm-ostree`/`ujust update` don't; a full `dnf5 upgrade` is untested.
 
 ## Versions
 | Component | Version / commit |
@@ -30,27 +28,18 @@ After the reboot, `journalctl -b --no-pager | grep -c "ordering cycle"` should p
 | NXP mwifiex base driver | `lf-6.18.2_1.0.0` |
 | IW620 firmware | not in the image; pcieuartiw620_combo_v1.bin is staged at boot from the loader's boot partition (ps5-stage-firmware) |
 | Kernel config changes | CONFIG_LSM += bpf, CONFIG_DEBUG_INFO_BTF=y, CONFIG_MT7921E=m |
-| Extra kernel patches | ps5-btusb-quirks-fix, ps5-hdmi-audio-flava3, ps5-mt7921-btusb-bulk-out, ps5-mt7921-l2cap-defer-security (patches/) |
+| Extra kernel patches | ps5-btusb-quirks-fix, ps5-hdmi-audio-flava3, ps5-mt7921-btusb-bulk-out, ps5-mt7921-l2cap-defer-security, ps5-hdmi-hotplug-pr43, ps5-hdmi-rearm-pr46, ps5-hdmi-flava3-scrambling-off, ps5-hdmi-1440p120-experimental (patches/) |
 | Image config | NetworkManager stable MAC (IW620), MediaTek BT udev + modprobe, ps5-stage-firmware boot-cycle drop-in (files/) |
 | cmdline.txt | root=LABEL=bazzite-deck rw rootwait console=ttyTitania0 console=tty0 mitigations=off idle=halt preempt=full lsm=landlock,lockdown,yama,integrity,apparmor,bpf |
 
 ## Install
 1. Download all `.7z.00*` files into one folder.
-2. Open `ps5-bazzite-deck-v1.0.5.img.7z.001` with 7-Zip (Windows) / Keka (macOS) / `7z x` (Linux) → you get `ps5-bazzite-deck.img`.
-3. Flash it to a 32 GB+ USB/SSD with Rufus (or `dd` on Linux) and boot with the loader. First boot is slow; the screen can stay black for a while.
-
-**Verify it's working** (Switch to Desktop → Konsole):
-- `uname -r` → `7.3.0`
-- `systemctl status cardwired` → `active (running)` = Game Mode works
-- `vainfo` → H264 / HEVC / VP9 profiles = hardware video decode works
-- `nmcli device` → Wi-Fi `connected`
-- `bluetoothctl list` → a controller = Bluetooth works
-- `journalctl -b | grep -c "ordering cycle"` → `0` = boot fix active
-- Slim / MediaTek only: `lsmod | grep mt7921e`, `dmesg | grep -i mt7921`
+2. Open `ps5-bazzite-deck-v1.0.6.img.7z.001` with 7-Zip (Windows) / Keka (macOS) / `7z x` (Linux) → you get `ps5-bazzite-deck.img`.
+3. Flash it to a 32 GB+ USB/SSD with Rufus (or `dd` on Linux) and boot with the loader. The default password is `ps5`.
 
 ## Files
-- `ps5-bazzite-deck-v1.0.5.img.7z.001/.002/.003` – the image as a 7-Zip multi-volume archive (extract from `.001`)
-- `ps5-bazzite-deck-v1.0.5.sha256` – checksums
+- `ps5-bazzite-deck-v1.0.6.img.7z.001/.002/.003` – the image as a 7-Zip multi-volume archive (extract from `.001`)
+- `ps5-bazzite-deck-v1.0.6.sha256` – checksums
 - `VERSIONS.md` – exact upstream pins
 - `local-changes.diff` – changes applied to the upstream image builder
 - `*.patch` – kernel and driver patches used in this build

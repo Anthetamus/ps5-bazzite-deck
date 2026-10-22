@@ -4,6 +4,12 @@ All notable changes to the images. Exact upstream versions are in each release's
 
 ## [Unreleased]
 
+## [v1.0.6] – 2026-10-22
+- **HDMI: picture comes back when the display wakes up** (display already on at boot, woken from standby, power-cycled): the HDMI bridge is set up again after the display re-announces itself. ps5-linux-patches #46 (rdmrocha), merged by hand onto #43. Off switch: add `hdmi.rearm=0` to `cmdline.txt`
+- **HDMI hotplug**: switching to a different display or re-plugging the cable is detected, and the picture and HDMI audio are set up again. ps5-linux-patches #43, ported to the 7.3 display code
+- **Fix: no signal after switching down from 4K** (e.g. to 1080p or 1080p120) on FLAVA3 consoles: 4K60 turns HDMI 2.0 scrambling on in the TV, and it was never turned off again for lower modes. Now it is. 1080p120 works
+- **1440p120, experimental and opt-in**: add `hdmi.allow_1440p120=1` to `cmdline.txt`. Uses the 4K60 high-bandwidth setup on FLAVA3; untested on Verde
+
 ## [v1.0.5] – 2026-10-22
 - **Fix: services randomly missing after the first reboot** (no Wi-Fi/Ethernet because NetworkManager never started, Switch to Desktop dropping back to Game Mode). Cause: the image builder's `ps5-stage-firmware.service` creates a systemd ordering cycle (`Before=systemd-modules-load` with default dependencies, i.e. also after `basic.target`); systemd breaks it by deleting a different job each boot. Fixed with a drop-in setting `DefaultDependencies=no`. Affected v1.0.3 and v1.0.4 on all models
 - MediaTek Wi-Fi (PS5 Slim) confirmed working by a tester; MediaTek Bluetooth still unconfirmed
