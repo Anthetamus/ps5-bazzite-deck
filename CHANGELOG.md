@@ -4,6 +4,12 @@ All notable changes to the images. Exact upstream versions are in each release's
 
 ## [Unreleased]
 
+## [v1.0.7] – 2026-10-23
+- **Fix: black screen at boot on some TVs (FLAVA3 HDMI chip).** The two FLAVA3 event sequences that v1.0.6 enabled (from ps5-linux-patches #43) are off again: on some TVs they made the chip re-announce the TV during the first picture setup, link training failed and the screen stayed black. Was v1.0.6 hotfix 1
+- **Fix: 1440p picture shifted (FLAVA3).** The chip places a 1440p picture as if the signal had the back porches of the standard 1440p60 reduced-blanking timing (80 px / 33 lines); other 1440p timings (the desktop's generated 1440p60, a TV's 1440p120) were shifted right or down. The sync pulses are now moved so the back porches match; resolution, totals and refresh rate are unchanged
+- SSH is enabled by default (user `ps5`, password `ps5`; change it with `passwd`)
+- Kernel: `CONFIG_MODULE_ALLOW_BTF_MISMATCH=y`, so kernel-only hotfixes keep loading the release's modules
+
 ## [v1.0.6] – 2026-10-22
 - **HDMI: picture comes back when the display wakes up** (display already on at boot, woken from standby, power-cycled): the HDMI bridge is set up again after the display re-announces itself. ps5-linux-patches #46 (rdmrocha), merged by hand onto #43. Off switch: add `hdmi.rearm=0` to `cmdline.txt`
 - **HDMI hotplug**: switching to a different display or re-plugging the cable is detected, and the picture and HDMI audio are set up again. ps5-linux-patches #43, ported to the 7.3 display code

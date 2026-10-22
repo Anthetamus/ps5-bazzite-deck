@@ -3,7 +3,7 @@
 #   bash tools/add-update-sections.sh
 set -euo pipefail
 R=VivaLaVent/ps5-bazzite-deck; SRC=$(cd "$(dirname "$0")/.." && pwd)
-for T in v1.0.3 v1.0.4 v1.0.5 v1.0.6; do
+for T in v1.0.3 v1.0.4 v1.0.5 v1.0.6 v1.0.7; do
   S="$SRC/docs/update-sections/$T.md"; [ -f "$S" ] || continue
   gh release view "$T" --repo "$R" --json body -q .body > /tmp/body-$T.md || { echo "skip $T (no release)"; continue; }
   awk -v sec="$S" '
