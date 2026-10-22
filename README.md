@@ -14,14 +14,15 @@ Questions, test reports, help: **[Discord](https://discord.gg/f8QARgNkf5)**
 | | |
 |---|---|
 | Boots into Steam Gaming Mode | yes, Switch to Desktop / Return to Gaming Mode work out of the box |
-| Display | 4K60 and HDR on an LG C4; the mode is negotiated at boot and can't be changed afterwards |
+| Display | 4K60 and HDR on an LG C4; adjust resolution/HDR once in Game Mode settings on first boot |
 | Hardware video decode/encode (VCN) | H.264, HEVC, VP9, VC-1, MPEG-2 decode; H.264 encode (HEVC encode I-frame only) |
-| Wi-Fi (NXP IW620) | driver included, firmware staged at boot from the loader; `ps_mode=0` set for stability |
-| Bluetooth | re-enabled by the 7.3 kernel patches |
+| Wi-Fi (NXP IW620, PS5 fat) | driver with upstream HE/TX fixes; firmware staged at boot from the loader; `ps_mode=0`; NetworkManager stable-MAC config |
+| Bluetooth (NXP IW620) | yes, with `patches/ps5-btusb-quirks-fix.patch` (the 7.3 PS5 patch had the device quirks in the wrong `btusb` table) |
+| Wi-Fi + Bluetooth (MediaTek MT7921, PS5 Slim / newer) | Wi-Fi confirmed by a Slim tester; Bluetooth: WizGery's patches and udev rules included, unconfirmed. Same image for all models |
 | Kernel | Linux 7.3 (see [Releases](../../releases) for the exact version per image) |
 
 Tested on: PS5 fat (CFI-10xx) · firmware 13.60 · [soniciso1 loader](https://github.com/soniciso1/ps5-linux-loader) v13.60 · LG C4 @ 4K60.
-MediaTek (PS5 Slim / newer) support is included from v1.0.4 but has not been tested on hardware; reports welcome.
+MediaTek (PS5 Slim / newer): Wi-Fi confirmed by a tester; Bluetooth unconfirmed, reports welcome.
 
 ## Install
 
@@ -32,8 +33,12 @@ MediaTek (PS5 Slim / newer) support is included from v1.0.4 but has not been tes
 3. Flash the `.img` to a USB drive or SSD of 32 GB or more (Balena Etcher, Rufus in DD mode, or `dd`).
 4. Boot with the PS5 Linux loader as usual. The first boot is slow and the screen can stay black for a while.
 
-Check on the PS5: `uname -r` (kernel), `systemctl status cardwired` (must be *active* for Game Mode),
-`vainfo` (video decode), `nmcli device` (Wi-Fi).
+**Verify it's working** (Switch to Desktop → Konsole):
+- `uname -r` → `7.3.0`
+- `systemctl status cardwired` → `active (running)` = Game Mode works
+- `vainfo` → H264 / HEVC / VP9 profiles = hardware video decode works
+- `nmcli device` → Wi-Fi `connected`
+- `bluetoothctl list` → a controller = Bluetooth works
 
 ## Why Bazzite Deck never worked on the PS5
 
@@ -57,19 +62,20 @@ Full write-up: [docs/game-mode-fix.md](docs/game-mode-fix.md).
 build.sh                               one-shot build: clone builder, apply fixes, build, post-build, compress
 patches/ps5-iw620-kernel73-compat.patch kernel 7.3 compatibility for the PS5 IW620 Wi-Fi driver (cfg80211 API changes)
 patches/ps5-btusb-quirks-fix.patch     Bluetooth: PS5 IW620 btusb quirks moved to quirks_table (fixes init failure)
-patches/ps5-hdmi-audio-flava3.patch     HDMI audio stability for FLAVA3 HDMI chips (upstream #42, 7.3 port)
-patches/ps5-mt7921-*.patch              MediaTek Bluetooth (WizGery 0003 ported to 7.3, 0004)
-files/                                  config files baked into the image (NetworkManager stable MAC, MediaTek BT udev/modprobe)
+patches/ps5-hdmi-audio-flava3.patch    HDMI audio stability for FLAVA3 HDMI chips (upstream #42, 7.3 port)
+patches/ps5-mt7921-*.patch             MediaTek Bluetooth (WizGery 0003 ported to 7.3, 0004)
+files/                                 files baked into the image: NetworkManager stable MAC, MediaTek BT udev/modprobe,
+                                       boot ordering-cycle fix for ps5-stage-firmware.service
 docs/game-mode-fix.md                  how the Game Mode problem was found and fixed
-docs/release-template.md               release notes template
+docs/release-template.md               release notes of the current release
 CHANGELOG.md
 ```
 
-`build.sh` changes the upstream image builder in three places (all recorded in `local-changes.diff`
-in each release): mounts the patches directory into the kernel build so the VCN firmware is found,
-applies the kernel 7.2/7.3 and RTNL patches to the Wi-Fi driver, and adds `lsm=…,bpf` to `cmdline.txt`.
-It then builds Linux 7.3 with rmuxnet's 7.3 PS5 patches, the two config fixes above, bakes the Wi-Fi
-driver option (`ps_mode=0`) into the image, and produces the release files.
+`build.sh` changes the upstream image builder (all recorded in `local-changes.diff` in each release):
+mounts the patches directory into the kernel build so the VCN firmware is found, applies the Wi-Fi driver
+patches (kernel 7.2/7.3 compat, RTNL, HE/TX) with objtool enabled, and sets `lsm=…,bpf` in `cmdline.txt`.
+It then builds Linux 7.3 with rmuxnet's 7.3 PS5 patches plus the patches above, `bpf` LSM + BTF +
+`CONFIG_MT7921E=m`, bakes the files from `files/` into the image, and produces the release files.
 
 ### Building it yourself
 
@@ -86,20 +92,18 @@ Releases are tagged `vMAJOR.MINOR.PATCH`:
 
 - **MAJOR** – a different base (new Bazzite major, new kernel series such as 7.4)
 - **MINOR** – new features or fixes that change what works (Wi-Fi, Bluetooth, Game Mode, …)
-- **PATCH** – rebuilds with newer upstream patches/firmware and no functional change
+- **PATCH** – fixes and rebuilds with newer upstream patches/firmware
 
 Every release ships a `VERSIONS.md` with the exact pins: Bazzite image digest, kernel tag, patch repo
-commits, builder commit, Wi-Fi driver/firmware hashes and the kernel config changes. The release
-notes repeat the important ones. `CHANGELOG.md` tracks changes between releases.
+commits, builder commit and the kernel config changes. `CHANGELOG.md` tracks changes between releases.
 
 ## Known limitations
 
 - Not booted via ostree: `rpm-ostree` and `ujust update` don't work; `dnf5 install` does
-  (the root is a plain ext4 filesystem). Treat Bazzite updates as unsupported.
-- The display runs at the mode negotiated at boot and can't be changed afterwards. Switching to a text
-  console (Ctrl+Alt+F3) drops the signal.
+  (the root is a plain ext4 filesystem). A full `dnf5 upgrade` is untested; base updates come as new releases.
 - On first boot, adjust the display settings in Game Mode (Settings → Display): disable HDR and set a
-  higher resolution. The display mode itself is negotiated at boot and can't be changed afterwards.
+  higher resolution. Switching to a text console (Ctrl+Alt+F2/F3) drops the signal on some TVs.
+- Black screen at boot on some TVs: disable HDMI Device Link in the PS5's HDMI settings.
 - HEVC encode is I-frame only; use H.264 for streaming/recording.
 
 ## Credits
@@ -111,11 +115,12 @@ notes repeat the important ones. `CHANGELOG.md` tracks changes between releases.
 - **[soniciso1](https://github.com/soniciso1)** – loader with firmware 13.60 support.
 - **[ps5-linux-mwifiex](https://github.com/ps5-linux/ps5-linux-mwifiex)** contributors (masterzorag,
   dmemarko and others) – PS5 IW620 Wi-Fi driver patches.
+- **[WizGery](https://github.com/WizGery/ps5-mediatek-fixes)** – MediaTek Bluetooth patches.
 - **[etawen](https://repo.etawen.dev/)** – PS5 package repo and documentation.
 - **[Universal Blue / Bazzite](https://github.com/ublue-os/bazzite)** – Bazzite itself.
 - **Gilles ([@VivaLaVent](https://github.com/VivaLaVent))** – diagnosed why Bazzite Deck's Game Mode fails on the PS5
   (`cardwired`, BPF LSM + BTF), the config and cmdline fixes, the kernel 7.3 Wi-Fi driver compatibility
-  patch, the Bluetooth `btusb` quirks fix, and this build.
+  patch, the Bluetooth `btusb` quirks fix, the boot ordering-cycle fix, and this build.
 
 ## License
 

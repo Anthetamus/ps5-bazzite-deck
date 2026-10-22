@@ -81,13 +81,15 @@ grep -q "lsm=" "$BOOT/cmdline.txt" || sudo sed -i 's/[[:space:]]*$/ lsm=landlock
 echo "    cmdline: $(cat "$BOOT/cmdline.txt")"
 echo "options moal ps_mode=0" | sudo tee "$ROOT/etc/modprobe.d/ps5-iw620.conf" >/dev/null
 sudo install -Dm644 "$SRC/files/99-ps5-iw620.conf" "$ROOT/etc/NetworkManager/conf.d/99-ps5-iw620.conf"        # IW620: stable MAC during scans
+sudo install -Dm644 "$SRC/files/ps5-stage-firmware-no-default-deps.conf" "$ROOT/etc/systemd/system/ps5-stage-firmware.service.d/10-no-default-deps.conf"   # fixes boot ordering cycle (random missing services)
 sudo install -Dm644 "$SRC/files/99-ps5-bt-phantom.rules" "$ROOT/etc/udev/rules.d/99-ps5-bt-phantom.rules"      # MediaTek BT: phantom interfaces, no autosuspend
 sudo install -Dm644 "$SRC/files/btusb-ps5.conf" "$ROOT/etc/modprobe.d/btusb-ps5.conf"
 sync
 cleanup; trap - EXIT
 
 echo "==> 6. record exact versions"
-BAZZITE_DIGEST="$(docker run --rm quay.io/skopeo/stable inspect docker://ghcr.io/ublue-os/bazzite-deck:stable 2>/dev/null | grep -m1 '"Digest"' | sed 's/.*"sha256:\([0-9a-f]*\)".*/sha256:\1/' || echo unknown)"
+SKOPEO_OUT="$(docker run --rm quay.io/skopeo/stable inspect docker://ghcr.io/ublue-os/bazzite-deck:stable 2>/dev/null || true)"
+BAZZITE_DIGEST="$(printf '%s' "$SKOPEO_OUT" | grep -m1 '"Digest"' | sed 's/.*"sha256:\([0-9a-f]*\)".*/sha256:\1/')"; [ -n "$BAZZITE_DIGEST" ] || BAZZITE_DIGEST=unknown
 cat > output/VERSIONS.md << V
 # Versions in release $RELEASE (built $(date -u +%Y-%m-%d))
 
