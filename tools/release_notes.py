@@ -4,7 +4,7 @@
   python3 tools/release_notes.py            # render to /tmp/release-notes/<tag>.md and update GitHub
   python3 tools/release_notes.py --dry-run  # render only
 
-Per release it combines: the existing "Tested:" line (kept from the current notes), the release's
+Per release it combines: the release's
 "What's new" / "Known issues" (docs/release-notes/<tag>.md), its in-place update section
 (docs/update-sections/<tag>.md), the common settings/install/known-issues blocks below, the release's
 own VERSIONS.md (downloaded from the release) and its actual asset list.
@@ -23,7 +23,7 @@ SETTINGS = """## Before and after the first boot
 - The default password is `ps5`.
 """
 COMMON_ISSUES = ["First boot is slow; the screen can stay black for a few minutes.",
-                 "PS5 Pro is not supported."]
+                 "**PS5 Pro is the only model that isn't supported.** Which firmware versions work depends on the loader: see the [soniciso1 PS5 Linux loader releases](https://github.com/soniciso1/ps5-linux-loader/releases)."]
 
 
 def gh(*args, capture=True):
@@ -65,8 +65,6 @@ def files_section(tag, assets):
 def render(tag, tmp):
     info = json.loads(gh("release", "view", tag, "--repo", REPO, "--json", "body,assets"))
     assets = [a["name"] for a in info["assets"]]
-    tested = re.search(r"^\*\*Tested:\*\*.*$", info["body"], re.M)
-    tested = tested.group(0) if tested else "**Tested:** PS5 fat (CFI-10xx), FW 13.60, LG C4"
     per = open(os.path.join(SRC, "docs/release-notes", f"{tag}.md"), encoding="utf-8").read()
     upd = open(os.path.join(SRC, "docs/update-sections", f"{tag}.md"), encoding="utf-8").read().strip()
     versions = ""
@@ -80,7 +78,7 @@ def render(tag, tmp):
 2. Open `ps5-bazzite-deck-{tag}.img.7z.001` with 7-Zip (Windows) / Keka (macOS) / `7z x` (Linux) → you get `ps5-bazzite-deck.img`.
 3. Flash it to a 32 GB+ USB drive or SSD with Rufus (or `dd` on Linux) and boot with the loader.
 """
-    parts = [tested + "\n", "## What's new\n" + section(per, "What's new") + "\n", upd + "\n", SETTINGS, install,
+    parts = ["## What's new\n" + section(per, "What's new") + "\n", upd + "\n", SETTINGS, install,
              "## Known issues\n" + "\n".join(f"- {i}" for i in COMMON_ISSUES + issues) + "\n",
              versions, files_section(tag, assets), f"---\nQuestions, bug reports, test results: **Discord {DISCORD}**\n"]
     return "\n".join(p for p in parts if p)

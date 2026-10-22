@@ -33,11 +33,6 @@ What `update.sh` does, in order:
 It prints an undo command at the end. If the PS5 doesn't boot after the update: put the USB drive in your PC
 and reflash, or boot the previous kernel by copying `bzImage` back (the backup is on the Linux partition).
 
-## From the v1.0.6 pre-release: kernel only
-
-The final v1.0.6 only changed the kernel image. On the USB drive's FAT32 partition (from your PC):
-rename `bzImage` to `bzImage.old`, copy the new `bzImage` there. Optional: add ` hdmi.allow_1440p120=1`
-to the line in `cmdline.txt` for 1440p120.
 
 ## From v1.0.4 to v1.0.5 only
 ```

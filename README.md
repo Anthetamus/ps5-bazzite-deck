@@ -19,9 +19,8 @@ Your PS5 itself is not modified: unplug the drive and it's a normal PS5 again.
 
 ## What you need
 
-- A PS5 (fat or Slim) on a firmware supported by the PS5 Linux loader. Tested on **13.60** with
-  [soniciso1's loader](https://github.com/soniciso1/ps5-linux-loader); see the
-  [ps5-linux loader](https://github.com/ps5-linux/ps5-linux-loader) for the official list.
+- Any PS5 model **except the PS5 Pro** (not supported), on a firmware the loader supports: see the
+  [soniciso1 PS5 Linux loader releases](https://github.com/soniciso1/ps5-linux-loader/releases). Tested on firmware 13.60.
 - A USB drive of **32 GB or more**, ideally an external SSD (much faster than a stick).
 - A PC to download and flash the image.
 - Optional but handy for the first setup: a USB keyboard.
