@@ -1,10 +1,10 @@
 <!-- Release title:  v1.0.5 – boot fix (random missing Wi-Fi / desktop), MediaTek Wi-Fi confirmed -->
 
-**Tested:** PS5 fat (CFI-10xx) · FW 13.60 · soniciso1 loader v13.60 · LG C4 4K60 · Game Mode, Wi-Fi, Bluetooth (DualSense), VCN, 4K60 · MediaTek: Wi-Fi confirmed by a Slim tester, Bluetooth unconfirmed
+**Tested:** PS5 fat (CFI-10xx) · FW 13.60 · soniciso1 loader v13.60 · LG C4 4K60 · Game Mode, Wi-Fi, Bluetooth (DualSense), VCN, 4K60 · MediaTek: Wi-Fi confirmed by a Slim tester
 
 ## What's new
 - **Fix: services randomly missing after the first reboot** (no Wi-Fi/Ethernet, Switch to Desktop dropping back to Game Mode). A boot service was ordered in a loop; systemd broke the loop by skipping a different service each boot. Affected v1.0.3 and v1.0.4 on all models. On v1.0.4? See below, no reflash needed
-- MediaTek Wi-Fi (PS5 Slim) confirmed working by a tester; MediaTek Bluetooth still unconfirmed
+- MediaTek Wi-Fi (PS5 Slim) confirmed working by a tester
 
 ### Already on v1.0.4? No need to reflash
 v1.0.5 is v1.0.4 plus this one fix. Open a terminal (desktop → Konsole, or Ctrl+Alt+F2 if your TV keeps the picture), run this and it reboots:
@@ -12,16 +12,6 @@ v1.0.5 is v1.0.4 plus this one fix. Open a terminal (desktop → Konsole, or Ctr
 sudo mkdir -p /etc/systemd/system/ps5-stage-firmware.service.d && printf '[Unit]\nDefaultDependencies=no\nConflicts=shutdown.target\nBefore=shutdown.target\n' | sudo tee /etc/systemd/system/ps5-stage-firmware.service.d/10-no-default-deps.conf >/dev/null && sudo systemctl daemon-reload && sudo reboot
 ```
 After the reboot, `journalctl -b --no-pager | grep -c "ordering cycle"` should print `0`. The default password is `ps5`.
-
-**From v1.0.4:**
-- Rebuilt on current Bazzite Deck stable and rmux's latest 7.3 PS5 patches (`meower` HEAD): fan autoservo fix, boot fan target set by the kernel
-- HDMI audio stability fix for FLAVA3 HDMI chips (upstream ps5-linux-patches #42, ported to 7.3)
-- Wi-Fi (NXP IW620): driver rebuilt with the upstream HE capability + TX fixes; built with objtool metadata (removes the kernel warning at boot)
-- Wi-Fi: NetworkManager keeps the permanent MAC during scans (fixes GUI Wi-Fi joins)
-- MediaTek MT7921 (PS5 Slim / newer): Wi-Fi driver, WizGery's Bluetooth patches (btusb bulk-OUT fix ported to 7.3, L2CAP defer-security) and udev/modprobe rules. One image for all models; drivers bind by hardware ID
-- Boot: dropped the ignored `video=DP-1:1920x1080@60` from `cmdline.txt`
-
-Still included from v1.0.3: Game Mode fix (`bpf` LSM + BTF), kernel 7.3 Wi-Fi compat patch, Bluetooth `btusb` quirks-table fix.
 
 ## Known issues
 - First boot is slow; the screen can stay black for a while.
