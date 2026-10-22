@@ -52,10 +52,10 @@ If you reset the PS5 settings, set these again.
 
 ## First boot
 
-- The default password is **`ps5`** (asked for anything that needs admin rights).
-- In Game Mode, go to `Settings` → `Display`: turn **HDR off** and pick your resolution.
-- Connect to Wi-Fi in the setup or in `Settings` → `Internet`. If Wi-Fi or the desktop doesn't work, **reboot once**.
-- To get to the desktop: Steam button → `Power` → `Switch to Desktop`. The desktop has a "Return to Gaming Mode" icon.
+- The default password is **`ps5`** (asked for anything that needs admin rights). SSH is on from v1.0.7:
+  `ssh ps5@<your PS5's IP>`. **Change the password** with `passwd`, since anyone on your network can try `ps5`.
+- **Important:** in Bazzite's display settings, turn **HDR off** and set **RGB range** to **Full**.
+- Connect to Wi-Fi during the setup. If Wi-Fi doesn't work after that, **reboot once**.
 
 ## Updating
 
@@ -67,44 +67,39 @@ Reflashing always works too (back up anything you want to keep from the drive fi
 
 The USB drive stays required: the PS5 loader always starts the kernel from its small FAT32
 partition. The M.2 holds the system. Install the **same version** on the M.2 as on the USB.
-This section is new; if a step doesn't work for you, tell us in [Discord](https://discord.gg/f8QARgNkf5).
+If a step doesn't work for you, tell us in [Discord](https://discord.gg/f8QARgNkf5).
 
-1. **Prepare the M.2** with `m2_init` from [ps5-linux-tools](https://github.com/ps5-linux/ps5-linux-tools)
-   (follow their README; this wipes the M.2). On Bazzite, build the tools inside a distrobox:
+All steps run on the PS5, booted from the USB, in a terminal (password `ps5`).
+
+1. **Get the tools** ([ps5-linux-tools](https://github.com/ps5-linux/ps5-linux-tools); Bazzite has everything needed to build them).
+   If the M.2 isn't prepared for Linux yet, follow their README (`m2_init`) first.
    ```
-   distrobox create -n build -i fedora:latest && distrobox enter build -- bash -c 'sudo dnf install -y gcc make git zlib-devel && git clone https://github.com/ps5-linux/ps5-linux-tools ~/ps5-linux-tools && make -C ~/ps5-linux-tools'
+   git clone https://github.com/ps5-linux/ps5-linux-tools ~/ps5-linux-tools && make -C ~/ps5-linux-tools
    ```
 
-2. **Install** (booted from the USB, Konsole). `m2_install.sh` expects the boot partition at
-   `/boot/efi`; Bazzite has it at `/efi`, so mount it there too first:
+2. **Install.** `m2_install.sh` looks for the boot partition at `/boot/efi`; Bazzite has it at `/efi`, so mount it there too:
    ```
    sudo mkdir -p /boot/efi && sudo mount LABEL=boot /boot/efi
-   cd ~/ps5-linux-tools
-   sudo ./m2_install.sh --install /path/to/ps5-bazzite-deck.img
+   cd ~/ps5-linux-tools && sudo ./m2_install.sh --install /path/to/ps5-bazzite-deck.img
    ```
    Use the extracted `.img`, not the `.7z` files.
 
-3. **Fix the M.2's fstab.** The script writes a boot-partition line for `/boot/efi` (on some
-   versions with an empty UUID, which makes the M.2 hang in emergency mode). Replace it:
-   ```
-   sudo mkdir -p /mnt/m2 && sudo mount LABEL=bazzite-deck-m2 /mnt/m2
-   sudo sed -i '/ vfat /d' /mnt/m2/etc/fstab
-   echo "LABEL=boot /efi vfat defaults,nofail 0 2" | sudo tee -a /mnt/m2/etc/fstab
-   cat /mnt/m2/etc/fstab && sudo umount /mnt/m2
-   ```
-   `cat` must show two lines: `LABEL=bazzite-deck-m2 / ext4 …` and `LABEL=boot /efi vfat …`.
-
-4. **Start the M.2 system from the USB:** point `cmdline.txt` at the M.2, then reboot and run the loader:
+3. **Boot from the M.2 from now on:** point `cmdline.txt` at the M.2:
    ```
    sudo sed -i 's/root=LABEL=bazzite-deck /root=LABEL=bazzite-deck-m2 /' /efi/cmdline.txt && sudo cat /efi/cmdline.txt
    ```
-   To go back to the USB system, change `bazzite-deck-m2` back to `bazzite-deck`.
+
+4. **Start it:** `cd ~/ps5-linux-tools && sudo ./m2_exec.sh` switches to the M.2 system right away, or just reboot and
+   run the loader as usual.
+
+To go back to the USB system, change `bazzite-deck-m2` back to `bazzite-deck` in `cmdline.txt`.
 
 Notes:
-- Updating: run the in-place update while booted from the M.2. The USB's own system then stays on
-  the old version; that's fine as long as `cmdline.txt` points to the M.2.
-- `m2_exec.sh` (kexec) isn't needed with step 4. If you want it anyway: `sudo dnf install -y kexec-tools`.
-- Hangs or emergency mode at boot: check the fstab from step 3.
+- Updating: run the in-place update while booted from the M.2.
+- `m2_exec.sh` needs `kexec`; if it says `kexec: command not found`, install it with `sudo dnf install -y kexec-tools`, or just reboot.
+- Stuck in emergency mode when booting the M.2: its `/etc/fstab` may contain a boot-partition line with an empty
+  `UUID=`. Replace that line with `LABEL=boot /efi vfat defaults,nofail 0 2` (mount the M.2 from the USB system
+  with `sudo mount LABEL=bazzite-deck-m2 /mnt` to edit it).
 
 ## Troubleshooting
 
@@ -118,8 +113,8 @@ Notes:
 **Boots back into the PS5 menu**: you pressed the power button too early, or the USB power setting isn't
 set to `Always`.
 
-**Wi-Fi gone or "Switch to Desktop" doesn't work after a reboot (v1.0.4 and older)**: open a terminal
-(desktop → Konsole, or Ctrl+Alt+F2 if your TV keeps the picture) and run, then reboot:
+**Wi-Fi gone after a reboot (v1.0.4 and older)**: open a terminal (Konsole, SSH, or Ctrl+Alt+F2 if your TV
+keeps the picture) and run, then reboot:
 ```
 sudo mkdir -p /etc/systemd/system/ps5-stage-firmware.service.d && printf '[Unit]\nDefaultDependencies=no\nConflicts=shutdown.target\nBefore=shutdown.target\n' | sudo tee /etc/systemd/system/ps5-stage-firmware.service.d/10-no-default-deps.conf >/dev/null && sudo systemctl daemon-reload && sudo reboot
 ```
@@ -132,8 +127,8 @@ and send `log.txt` from the small FAT32 partition in [Discord](https://discord.g
 
 - **Does this touch my PS5's games or system?** No. Everything is on the USB drive.
 - **Can I dual-boot?** No. You run the jailbreak + loader each time you want Linux.
-- **120 Hz / 144 Hz?** Not yet, 60 Hz for now.
-- **HDR?** Not working yet. Keep it off.
+- **120 Hz?** 1080p120 works if your TV/monitor offers it. 1440p120 is experimental: add ` hdmi.allow_1440p120=1` to the line in `cmdline.txt` (FLAVA3 consoles; check with `dmesg | grep "HDMI IC Type"`).
+- **HDR?** Not working yet. Keep it off (see First boot).
 - **"Your PS5 wasn't turned off properly" after using Linux?** Normal and harmless.
 - **Can I install apps?** Yes: use the Discover store / Flatpak. `dnf5 install` works for system packages;
   `rpm-ostree` and `ujust update` don't (this image isn't an ostree install).
