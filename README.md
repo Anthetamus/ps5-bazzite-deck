@@ -59,9 +59,9 @@ If you reset the PS5 settings, set these again.
 
 ## Updating
 
-There's no automatic update; a new version means reflashing the drive (back up anything you want to keep
-from it first; Steam games can be re-downloaded). Release notes say when a small fix can be applied
-without reflashing.
+From v1.0.3 or newer you can update **without reflashing**: one update bundle brings you to the
+latest version and keeps your games and settings. See [docs/updating.md](docs/updating.md).
+Reflashing always works too (back up anything you want to keep from the drive first).
 
 ## Troubleshooting
 
