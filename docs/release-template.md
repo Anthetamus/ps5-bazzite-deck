@@ -3,8 +3,15 @@
 **Tested:** PS5 fat (CFI-10xx) · FW 13.60 · soniciso1 loader v13.60 · LG C4 4K60 · Game Mode, Wi-Fi, Bluetooth (DualSense), VCN, 4K60 · MediaTek: Wi-Fi confirmed by a Slim tester, Bluetooth unconfirmed
 
 ## What's new
-- **Fix: services randomly missing after the first reboot** (no Wi-Fi/Ethernet, Switch to Desktop dropping back to Game Mode). A boot service was ordered in a loop; systemd broke the loop by skipping a different service each boot. Affected v1.0.3 and v1.0.4 on all models. Staying on an older version? The one-line fix is in the v1.0.4 release notes
+- **Fix: services randomly missing after the first reboot** (no Wi-Fi/Ethernet, Switch to Desktop dropping back to Game Mode). A boot service was ordered in a loop; systemd broke the loop by skipping a different service each boot. Affected v1.0.3 and v1.0.4 on all models. On v1.0.4? See below, no reflash needed
 - MediaTek Wi-Fi (PS5 Slim) confirmed working by a tester; MediaTek Bluetooth still unconfirmed
+
+### Already on v1.0.4? No need to reflash
+v1.0.5 is v1.0.4 plus this one fix. Open a terminal (desktop → Konsole, or Ctrl+Alt+F2 if your TV keeps the picture), run this and it reboots:
+```
+sudo mkdir -p /etc/systemd/system/ps5-stage-firmware.service.d && printf '[Unit]\nDefaultDependencies=no\nConflicts=shutdown.target\nBefore=shutdown.target\n' | sudo tee /etc/systemd/system/ps5-stage-firmware.service.d/10-no-default-deps.conf >/dev/null && sudo systemctl daemon-reload && sudo reboot
+```
+After the reboot, `journalctl -b --no-pager | grep -c "ordering cycle"` should print `0`. The default password is `ps5`.
 
 **From v1.0.4:**
 - Rebuilt on current Bazzite Deck stable and rmux's latest 7.3 PS5 patches (`meower` HEAD): fan autoservo fix, boot fan target set by the kernel
@@ -19,7 +26,6 @@ Still included from v1.0.3: Game Mode fix (`bpf` LSM + BTF), kernel 7.3 Wi-Fi co
 ## Known issues
 - First boot is slow; the screen can stay black for a while.
 - On first boot, adjust the display settings in Game Mode (Settings → Display): disable HDR and set a higher resolution.
-- Black screen at boot on some TVs: disable HDMI Device Link in the PS5's HDMI settings (fixed it for a tester).
 - HEVC encode is I-frame only.
 - Not booted via ostree: `dnf5 install` works, `rpm-ostree`/`ujust update` don't; a full `dnf5 upgrade` is untested.
 
@@ -41,7 +47,7 @@ Still included from v1.0.3: Game Mode fix (`bpf` LSM + BTF), kernel 7.3 Wi-Fi co
 ## Install
 1. Download all `.7z.00*` files into one folder.
 2. Open `ps5-bazzite-deck-v1.0.5.img.7z.001` with 7-Zip (Windows) / Keka (macOS) / `7z x` (Linux) → you get `ps5-bazzite-deck.img`.
-3. Flash it to a 32 GB+ USB/SSD (Etcher, Rufus DD mode, or `dd`) and boot with the loader. First boot is slow; the screen can stay black for a while.
+3. Flash it to a 32 GB+ USB/SSD with Rufus (or `dd` on Linux) and boot with the loader. First boot is slow; the screen can stay black for a while.
 
 **Verify it's working** (Switch to Desktop → Konsole):
 - `uname -r` → `7.3.0`

@@ -1,0 +1,61 @@
+# Technical notes
+
+For people who want to know how the image is made or build it themselves. Users don't need any of this.
+
+## Why Bazzite Deck never worked on the PS5
+
+It was never the display or gamescope. Bazzite's Game Mode session launches Steam through the
+`cardwired` service, which loads an eBPF program and therefore needs two kernel features that the
+PS5 kernel configs don't enable:
+
+1. **The BPF LSM.** `CONFIG_BPF_LSM=y` is set, but `bpf` is missing from `CONFIG_LSM`, so it never
+   activates. (`lsm=landlock,lockdown,yama,integrity,apparmor,bpf` on the kernel command line also works.)
+2. **Kernel BTF.** The 7.3 patch set has `CONFIG_DEBUG_INFO_BTF` off, so `/sys/kernel/btf/vmlinux`
+   doesn't exist.
+
+Without them `cardwired` crash-loops (`CardwireEbpfError(LSMNotEnabled)` / `error parsing
+/sys/kernel/btf/vmlinux`), the session script kills gamescope one second after it starts, and after
+five attempts Bazzite drops you to the desktop. Both are one-line config changes, applied in `build.sh`.
+Full write-up: [docs/game-mode-fix.md](docs/game-mode-fix.md).
+
+## What's in this repo
+
+```
+build.sh                               one-shot build: clone builder, apply fixes, build, post-build, compress
+patches/ps5-iw620-kernel73-compat.patch kernel 7.3 compatibility for the PS5 IW620 Wi-Fi driver (cfg80211 API changes)
+patches/ps5-btusb-quirks-fix.patch     Bluetooth: PS5 IW620 btusb quirks moved to quirks_table (fixes init failure)
+patches/ps5-hdmi-audio-flava3.patch    HDMI audio stability for FLAVA3 HDMI chips (upstream #42, 7.3 port)
+patches/ps5-mt7921-*.patch             MediaTek Bluetooth (WizGery 0003 ported to 7.3, 0004)
+files/                                 files baked into the image: NetworkManager stable MAC, MediaTek BT udev/modprobe,
+                                       boot ordering-cycle fix for ps5-stage-firmware.service
+docs/game-mode-fix.md                  how the Game Mode problem was found and fixed
+docs/release-template.md               release notes of the current release
+CHANGELOG.md
+```
+
+`build.sh` changes the upstream image builder (all recorded in `local-changes.diff` in each release):
+mounts the patches directory into the kernel build so the VCN firmware is found, applies the Wi-Fi driver
+patches (kernel 7.2/7.3 compat, RTNL, HE/TX) with objtool enabled, and sets `lsm=…,bpf` in `cmdline.txt`.
+It then builds Linux 7.3 with rmuxnet's 7.3 PS5 patches plus the patches above, `bpf` LSM + BTF +
+`CONFIG_MT7921E=m`, bakes the files from `files/` into the image, and produces the release files.
+
+### Building it yourself
+
+Linux or WSL with Docker and ~60 GB free:
+```
+git clone https://github.com/VivaLaVent/ps5-bazzite-deck && cd ps5-bazzite-deck
+bash build.sh
+```
+Takes a couple of hours (kernel compile + Bazzite download). Output lands in `~/ps5-build-7.3/output/`.
+
+## Versioning
+
+Releases are tagged `vMAJOR.MINOR.PATCH`:
+
+- **MAJOR** – a different base (new Bazzite major, new kernel series such as 7.4)
+- **MINOR** – new features or fixes that change what works (Wi-Fi, Bluetooth, Game Mode, …)
+- **PATCH** – fixes and rebuilds with newer upstream patches/firmware
+
+Every release ships a `VERSIONS.md` with the exact pins: Bazzite image digest, kernel tag, patch repo
+commits, builder commit and the kernel config changes. `CHANGELOG.md` tracks changes between releases.
+
