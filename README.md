@@ -54,7 +54,7 @@ If you reset the PS5 settings, set these again.
 
 - The default password is **`ps5`** (asked for anything that needs admin rights). SSH is on from v1.0.7:
   `ssh ps5@<your PS5's IP>`. **Change the password** with `passwd`, since anyone on your network can try `ps5`.
-- **Important:** in Bazzite's display settings, turn **HDR off** and set **RGB range** to **Full**.
+- **Important:** turn **HDR off** and set **RGB range** to **Full**, in both Gaming Mode and desktop mode.
 - Connect to Wi-Fi during the setup. If Wi-Fi doesn't work after that, **reboot once**.
 
 ## Updating
