@@ -114,15 +114,23 @@ cat > output/VERSIONS.md << V
 V
 cat output/VERSIONS.md
 
-echo "==> 7. package as 7-Zip volumes (GitHub caps assets at 2 GB)"
 NAME="ps5-bazzite-deck-$RELEASE"
-rm -f output/$NAME.img.7z.*
-7z a -mx=5 -mmt=on -v1900m "output/$NAME.img.7z" "$IMG" >/dev/null
-(cd output && sha256sum $NAME.img.7z.* > "$NAME.sha256")
+echo "==> 7. in-place update bundle (kernel, modules, settings) - ready to test before the 7-Zip step"
+bash "$SRC/tools/make-update-bundle.sh" "$RELEASE"
 git diff > output/local-changes.diff
 cp "$SRC"/patches/*.patch output/
 
+if [ "${SKIP_7Z:-0}" = 1 ]; then
+  echo "==> 8. 7-Zip volumes skipped (SKIP_7Z=1)"
+else
+  echo "==> 8. package as 7-Zip volumes (GitHub caps assets at 2 GB)"
+  rm -f output/$NAME.img.7z.*
+  7z a -mx=5 -mmt=on -v1900m "output/$NAME.img.7z" "$IMG" >/dev/null
+  (cd output && sha256sum $NAME.img.7z.* > "$NAME.sha256")
+fi
+
 echo
 echo "DONE. Release assets in $REPO/output:"
-ls -lh output/$NAME.img.7z.* output/$NAME.sha256 output/VERSIONS.md output/local-changes.diff output/*.patch
+ls -lh output/$NAME-update.tar.xz* output/VERSIONS.md output/local-changes.diff output/*.patch
+[ "${SKIP_7Z:-0}" = 1 ] || ls -lh output/$NAME.img.7z.* output/$NAME.sha256
 echo "Flash output/ps5-bazzite-deck.img (raw) to test. On the PS5: uname -r, systemctl status cardwired, nmcli device"
