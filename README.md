@@ -4,7 +4,7 @@ Turn your PS5 into a Steam console: this is [Bazzite](https://bazzite.gg) in Ste
 PlayStation 5. It boots straight into **Steam Gaming Mode** (the Steam Deck interface), and a full KDE
 desktop is one click away.
 
-It runs from a USB drive, through the [ps5-linux](https://github.com/ps5-linux/ps5-linux-loader) loader.
+It runs from a USB drive, through the [PS5 Linux loader](https://github.com/rmuxwashere/ps5-linux-loader/releases).
 Your PS5 itself is not modified: unplug the drive and it's a normal PS5 again.
 
 **Download:** [Releases](../../releases) · **Help & testing:** [Discord](https://discord.gg/f8QARgNkf5)
@@ -20,7 +20,7 @@ Your PS5 itself is not modified: unplug the drive and it's a normal PS5 again.
 ## What you need
 
 - Any PS5 model **except the PS5 Pro** (not supported), on a firmware the loader supports: see the
-  [soniciso1 PS5 Linux loader releases](https://github.com/soniciso1/ps5-linux-loader/releases). Tested on firmware 13.60.
+  [PS5 Linux loader releases](https://github.com/rmuxwashere/ps5-linux-loader/releases). Tested on firmware 13.60.
 - A USB drive of **32 GB or more**, ideally an external SSD (much faster than a stick).
 - A PC to download and flash the image.
 - Optional but handy for the first setup: a USB keyboard.
