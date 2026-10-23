@@ -107,7 +107,7 @@ add an option at the end with a space in front of it, or delete it again to undo
 
 | Option | What it does | When to use it |
 |---|---|---|
-| `hdmi.allow_1440p120=1` | Makes 1440p120 available (FLAVA3 consoles) | Your TV/monitor offers 1440p120 |
+| `hdmi.allow_1440p120=1` | Makes 1440p120 available | Your TV/monitor offers 1440p120 |
 | `amdgpu.force_1080p=1` | Only allows 1080p60 | Black or garbled picture you can't get past; TVs that squeeze the whole picture into the left half at 4K |
 | `hdmi.rearm=0` | Turns off the "picture comes back when the TV wakes up" fix | The picture flickers or goes black right after appearing, e.g. after re-plugging HDMI |
 | `systemd.wants=sshd.service` | Starts SSH at boot | Only v1.0.6 and older; SSH is on by default from v1.0.7 |
@@ -137,7 +137,7 @@ and send `log.txt` from the small FAT32 partition in [Discord](https://discord.g
 
 - **Does this touch my PS5's games or system?** No. Everything is on the USB drive.
 - **Can I dual-boot?** No. You run the jailbreak + loader each time you want Linux.
-- **120 Hz?** 1080p120 works if your TV/monitor offers it. 1440p120 is experimental: add ` hdmi.allow_1440p120=1` to the line in `cmdline.txt` (FLAVA3 consoles; check with `dmesg | grep "HDMI IC Type"`).
+- **120 Hz?** 1080p120 works if your TV/monitor offers it. 1440p120 is experimental: add ` hdmi.allow_1440p120=1` to the line in `cmdline.txt`.
 - **HDR?** Not working yet. Keep it off (see First boot).
 - **"Your PS5 wasn't turned off properly" after using Linux?** Normal and harmless.
 - **Can I install apps?** Yes: use the Discover store / Flatpak. `dnf5 install` works for system packages;
