@@ -95,7 +95,6 @@ To go back to the USB system, change `bazzite-deck-m2` back to `bazzite-deck` in
 
 Notes:
 - Updating: run the in-place update while booted from the M.2.
-- `m2_exec.sh` needs `kexec`; if it says `kexec: command not found`, install it with `sudo dnf install -y kexec-tools`, or just reboot.
 - Stuck in emergency mode when booting the M.2: its `/etc/fstab` may contain a boot-partition line with an empty
   `UUID=`. Replace that line with `LABEL=boot /efi vfat defaults,nofail 0 2` (mount the M.2 from the USB system
   with `sudo mount LABEL=bazzite-deck-m2 /mnt` to edit it).
