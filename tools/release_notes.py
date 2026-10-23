@@ -23,7 +23,7 @@ SETTINGS = """## Before and after the first boot
 - The default password is `ps5`.
 """
 COMMON_ISSUES = ["First boot is slow; the screen can stay black for a few minutes.",
-                 "**PS5 Pro is the only model that isn't supported.** Which firmware versions work depends on the loader: see the [soniciso1 PS5 Linux loader releases](https://github.com/soniciso1/ps5-linux-loader/releases)."]
+                 "**PS5 Pro is the only model that isn't supported.** Which firmware versions work depends on the loader: see the [PS5 Linux loader releases](https://github.com/rmuxwashere/ps5-linux-loader/releases)."]
 
 
 def gh(*args, capture=True):
