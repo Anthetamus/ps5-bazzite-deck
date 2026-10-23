@@ -105,15 +105,13 @@ Notes:
 **`cmdline.txt` options.** The file is on the USB drive's small FAT32 partition and must stay **one single line**:
 add an option at the end with a space in front of it, or delete it again to undo.
 
-| Option | What it does | When to use it | Default |
-|---|---|---|---|
-| `hdmi.allow_1440p120=1` | Makes 1440p120 available (FLAVA3 consoles) | Your TV/monitor offers 1440p120 | off |
-| `amdgpu.force_1080p=1` | Only allows 1080p60 | Black or garbled picture you can't get past; TVs that squeeze the whole picture into the left half at 4K | off |
-| `hdmi.rearm=0` | Turns off the "picture comes back when the TV wakes up" fix | The picture flickers or goes black right after appearing, e.g. after re-plugging HDMI | on |
-| `root=LABEL=bazzite-deck-m2` (instead of `root=LABEL=bazzite-deck`) | Starts the system installed on the internal M.2 | After installing to the M.2; change it back to boot the USB system | `bazzite-deck` |
-| `systemd.wants=sshd.service` | Starts SSH at boot | Only v1.0.6 and older; SSH is on by default from v1.0.7 | not needed |
-| `lsm=landlock,lockdown,yama,integrity,apparmor,bpf` | Needed for Game Mode | **Don't remove** (Game Mode falls back to the desktop without it) | present |
-| `video=DP-1:…` | Old resolution hint the kernel ignores and logs errors for | **Don't add it back** | absent |
+| Option | What it does | When to use it |
+|---|---|---|
+| `hdmi.allow_1440p120=1` | Makes 1440p120 available (FLAVA3 consoles) | Your TV/monitor offers 1440p120 |
+| `amdgpu.force_1080p=1` | Only allows 1080p60 | Black or garbled picture you can't get past; TVs that squeeze the whole picture into the left half at 4K |
+| `hdmi.rearm=0` | Turns off the "picture comes back when the TV wakes up" fix | The picture flickers or goes black right after appearing, e.g. after re-plugging HDMI |
+| `systemd.wants=sshd.service` | Starts SSH at boot | Only v1.0.6 and older; SSH is on by default from v1.0.7 |
+| `lsm=landlock,lockdown,yama,integrity,apparmor,bpf` | Needed for Game Mode | **Don't remove** (Game Mode falls back to the desktop without it) |
 
 **White light but black screen**
 - Check HDMI Device Link is off (see PS5 settings).
