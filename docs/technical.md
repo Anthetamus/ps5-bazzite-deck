@@ -25,8 +25,8 @@ build.sh                               one-shot build: clone builder, apply fixe
 patches/ps5-iw620-kernel73-compat.patch Wi-Fi driver (NXP IW620): kernel 7.3 API changes (applied to the out-of-tree driver)
 patches/ps5-bluetooth.patch            Bluetooth: IW620 quirks table fix, MediaTek bulk-OUT endpoint, L2CAP defer security
 patches/ps5-hdmi-rearm-pr46.patch      HDMI: picture back when the same display wakes up (upstream PR #46, rdmrocha)
-patches/ps5-hdmi-output-fixes.patch    HDMI: FLAVA3 scrambling off below 340 MHz, no FLAVA3 event sequences, hotplug work queue
-patches/ps5-hdmi-modes.patch           HDMI: 1440p120, 1440p60, 1440p sync fixup, skip 4:2:0-only modes
+patches/ps5-hdmi-output-fixes.patch    HDMI: scrambling off below 340 MHz, no FLAVA3 event sequences, hotplug work queue, re-arm only for the same display, 8-bit colour cap
+patches/ps5-hdmi-modes.patch           HDMI: 1440p120, 1440p60, 1440p sync shape/polarity, skip 4:2:0-only modes
 files/                                 files baked into the image: NetworkManager stable MAC, MediaTek BT udev/modprobe,
                                        boot ordering-cycle fix for ps5-stage-firmware.service
 docs/game-mode-fix.md                  how the Game Mode problem was found and fixed

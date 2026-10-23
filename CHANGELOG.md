@@ -4,6 +4,13 @@ All notable changes to the images. Exact upstream versions are in each release's
 
 ## [Unreleased]
 
+## [v1.2.0] – 2026-10-23
+- **Fix: rainbow / "disco" colours** (posterized contours in gradients, seen on Verde consoles with TVs that offer deep colour): the output is capped at 8 bits per colour in the DRM core on the PS5. The graphics driver defaulted "max bpc" to 16 and compositors may ask for 10; the HDMI bridges show deeper colour as contours. Also stops the TV re-announcing itself every few seconds on such setups
+- **Fix: "timing issue" / no picture after switching displays**: the wake-up re-arm (#46) now only runs when the same display re-announces itself (EDID checksum); a different display is set up by the hotplug path and the desktop with its own mode
+- **Fix: link training errors at boot** (FLAVA3): the chip's "picture up" notification now cancels a pending re-arm, as Verde's already did, so it no longer fires during the first picture setup
+- **Fix: 1440p picture shifted 32 px to the left** with displays whose 1440p timing uses negative hsync (e.g. Elgato 4K X): the bridge places the picture relative to the rising edge of hsync, so 1440p timings now get the standard sync shape and positive polarity
+- Same drivers (modules) as v1.1.1; the kernel changes are all built in
+
 ## [v1.1.1] – 2026-10-23
 - **40-CU unlock opt-in again** (`amdgpu.ps5_cu_unlock=3` no longer in the image's `cmdline.txt`): on some consoles the 4 extra compute units cause artifacts (green dots), a purple tint or crashes (silicon lottery). The in-place update switches it off once for installs coming from v1.1.0; after that, a setting you add yourself is kept across updates. README: section "40 GPU compute units (optional)" with on/off commands
 - Same kernel and drivers as v1.1.0

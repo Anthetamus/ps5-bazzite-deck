@@ -9,6 +9,14 @@ PS5 HDMI output fixes                                     [ps5-bazzite-deck]
    screen stays black until a re-plug.
 3. Hotplug (#43): run the hotplug work on the unbound system queue (removes
    the "hogged CPU" workqueue warning).
+4. Re-arm (#46): only when the same sink re-announces itself (EDID checksum);
+   a different sink is set up by the hotplug path and the compositor, and
+   re-arming would re-apply the previous sink's mode ("timing issue"). On
+   FLAVA3 the "picture up" notification (0x04) cancels a pending re-arm, like
+   Verde's 0x03 (no re-arm during the first modeset at boot).
+5. Cap the output at 8 bits per colour (DRM core, PS5 only): the bridges show
+   deeper colour as posterized "rainbow" contours. Drivers default "max bpc"
+   to 16 and compositors may ask for 10.
 
 diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
 index 33120dafa..20bf3621a 100644
@@ -23,11 +31,59 @@ index 33120dafa..20bf3621a 100644
  }
  #endif
  
+diff --git a/drivers/gpu/drm/drm_atomic.c b/drivers/gpu/drm/drm_atomic.c
+index e5c8ef06c..4ae8fe40f 100644
+--- a/drivers/gpu/drm/drm_atomic.c
++++ b/drivers/gpu/drm/drm_atomic.c
+@@ -568,6 +568,15 @@ static int drm_atomic_connector_check(struct drm_connector *connector,
+ 	struct drm_writeback_job *writeback_job = state->writeback_job;
+ 	const struct drm_display_info *info = &connector->display_info;
+ 
++#ifdef CONFIG_X86_PS5
++	/*
++	 * The PS5's HDMI bridges take 8 bits per colour. Drivers default "max bpc"
++	 * to 16 and the compositor may ask for 10; deeper colour comes out as
++	 * posterized "rainbow" contours. Cap every commit at 8.
++	 */
++	if (state->max_requested_bpc > 8)
++		state->max_requested_bpc = 8;
++#endif
+ 	state->max_bpc = info->bpc ? info->bpc : 8;
+ 	if (connector->max_bpc_property)
+ 		state->max_bpc = min(state->max_bpc, state->max_requested_bpc);
+diff --git a/drivers/gpu/drm/drm_atomic_uapi.c b/drivers/gpu/drm/drm_atomic_uapi.c
+index 68d59e17f..92ff82f88 100644
+--- a/drivers/gpu/drm/drm_atomic_uapi.c
++++ b/drivers/gpu/drm/drm_atomic_uapi.c
+@@ -956,6 +956,15 @@ static int drm_atomic_connector_set_property(struct drm_connector *connector,
+ 						   fence_ptr);
+ 	} else if (property == connector->max_bpc_property) {
+ 		state->max_requested_bpc = val;
++#ifdef CONFIG_X86_PS5
++		/*
++		 * The PS5's HDMI bridges take 8 bits per colour; deeper colour
++		 * requested by the compositor (often 10 when the TV's EDID offers
++		 * deep colour) comes out as posterized "rainbow" contours.
++		 */
++		if (state->max_requested_bpc > 8)
++			state->max_requested_bpc = 8;
++#endif
+ 	} else if (property == connector->privacy_screen_sw_state_property) {
+ 		state->privacy_screen_sw_state = val;
+ 	} else if (property == connector->broadcast_rgb_property) {
 diff --git a/drivers/ps5/hdmi.c b/drivers/ps5/hdmi.c
-index 7efe015b9..6dc503d04 100644
+index 7efe015b9..a1befe533 100644
 --- a/drivers/ps5/hdmi.c
 +++ b/drivers/ps5/hdmi.c
-@@ -535,9 +535,13 @@ static void sceControlHdmiEvent(u8 enable)
+@@ -2,6 +2,7 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
++#include <linux/crc32.h>
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ #include <linux/ps5.h>
+@@ -535,9 +536,13 @@ static void sceControlHdmiEvent(u8 enable)
  void hdmiSystemResume(void)
  {
  	if (hdmi_ic_type == HDMI_IC_TYPE_FLAVA3) {
@@ -44,7 +100,7 @@ index 7efe015b9..6dc503d04 100644
  		i2c_cmd_4_2();
  		// sceSetHdcpSequence1st();
  		// sceSetHdcpSequence2nd();
-@@ -832,6 +836,9 @@ static void setHdmiBasicVideoConfigFlava3(const struct drm_display_mode *mode)
+@@ -832,6 +837,9 @@ static void setHdmiBasicVideoConfigFlava3(const struct drm_display_mode *mode)
  	i2c_exec();
  }
  
@@ -54,7 +110,7 @@ index 7efe015b9..6dc503d04 100644
  static void setVideoAdditionalConfigFlava3(const struct drm_display_mode *mode)
  {
  	u8 vic = drm_match_cea_mode(mode);
-@@ -867,13 +874,24 @@ static void setVideoAdditionalConfigFlava3(const struct drm_display_mode *mode)
+@@ -867,13 +875,24 @@ static void setVideoAdditionalConfigFlava3(const struct drm_display_mode *mode)
  	i2c_begin_block();
  	i2c_write(0x7a8b, 0x05);
  	if (vic == 97) {
@@ -80,3 +136,53 @@ index 7efe015b9..6dc503d04 100644
  	i2c_begin_block();
  	i2c_write(0x7021, 0xff);
  	i2c_write(0x700a, 0x02);
+@@ -1460,8 +1479,14 @@ void ps5_hdmi_unregister_drm(struct drm_device *dev)
+ }
+ EXPORT_SYMBOL(ps5_hdmi_unregister_drm);
+ 
++static u32 last_edid_crc;
++static bool have_edid_crc;
++
+ void hdmi_notification_handler(struct icc_msg *msg)
+ {
++	u32 crc;
++	bool other;
++
+ 		if (msg->data[1] == 0x02) {
+ 			fix_edid(&msg->data[4]);
+ 			real_edid = drm_edid_alloc(&msg->data[4], *(u16 *)&msg->data[2]);
+@@ -1474,16 +1499,29 @@ void hdmi_notification_handler(struct icc_msg *msg)
+ 				hotplug_handler(hotplug_data);
+ 			mutex_unlock(&hotplug_lock);
+ 
+-			/* #46: the same sink re-announcing wipes the bridge output -> re-arm */
+-			if (rearm) {
++			/*
++			 * #46: the same sink re-announcing wipes the bridge output -> re-arm.
++			 * A different sink (other EDID) is set up by the hotplug path above
++			 * and the compositor's own modeset; re-arming it would re-apply the
++			 * previous sink's mode.
++			 */
++			crc = crc32_le(~0, &msg->data[4], *(u16 *)&msg->data[2]);
++			other = have_edid_crc && crc != last_edid_crc;
++			last_edid_crc = crc;
++			have_edid_crc = true;
++			if (other) {
++				if (cancel_delayed_work(&rearm_work) || rearm)
++					pr_info("different display, re-arm skipped\n");
++			} else if (rearm) {
+ 				rearm_announce = ktime_get();
+ 				mod_delayed_work(system_dfl_wq, &rearm_work,
+ 						 msecs_to_jiffies(rearm_settle_ms));
+ 			}
+-		} else if (msg->data[1] == 0x03) {
+-			/* link up: the bridge is configured, nothing to re-arm */
++		} else if (msg->data[1] == 0x03 ||
++			   (msg->data[1] == 0x04 && hdmi_ic_type == HDMI_IC_TYPE_FLAVA3)) {
++			/* link / picture up (Verde 0x03, FLAVA3 0x04): nothing to re-arm */
+ 			if (cancel_delayed_work(&rearm_work))
+-				pr_info("link up, re-arm cancelled\n");
++				pr_info("picture up (0x%02x), re-arm cancelled\n", msg->data[1]);
+ 		}
+ }
+ EXPORT_SYMBOL(hdmi_notification_handler);
