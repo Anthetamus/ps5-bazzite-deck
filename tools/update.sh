@@ -30,6 +30,8 @@ echo "==> system settings"
 while read -r src dst; do [ -n "$src" ] && sudo install -Dm644 "files/$src" "$dst"; done < FILES
 sudo sed -i 's/ video=DP-1:1920x1080@60//' /efi/cmdline.txt
 sudo grep -q "lsm=" /efi/cmdline.txt || sudo sed -i 's/[[:space:]]*$/ lsm=landlock,lockdown,yama,integrity,apparmor,bpf/' /efi/cmdline.txt
+# all 40 GPU compute units, unless the user already chose a ps5_cu_unlock setting
+sudo grep -q "ps5_cu_unlock" /efi/cmdline.txt || sudo sed -i 's/[[:space:]]*$/ amdgpu.ps5_cu_unlock=3/' /efi/cmdline.txt
 echo "$V" | sudo tee /etc/ps5-bazzite-deck-version >/dev/null
 sync
 

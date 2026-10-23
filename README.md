@@ -108,7 +108,7 @@ end with a space in front of it, or delete it again to undo.
 |---|---|---|
 | `amdgpu.force_1080p=1` | Only allows 1080p60 | Black or garbled picture you can't get past |
 | `hdmi.rearm=0` | Turns off the "picture comes back when the TV wakes up" fix | The picture flickers or goes black right after appearing, e.g. after re-plugging HDMI |
-| `amdgpu.ps5_cu_unlock=3` | Uses all 40 GPU compute units instead of 36 (`dmesg \| grep active_cu_number` shows the number) | More GPU power. Sony switched the extra 4 off; on some consoles they may be faulty, so remove it if games crash, freeze or show glitches |
+| `amdgpu.ps5_cu_unlock=3` | Uses all 40 GPU compute units instead of 36 (`dmesg \| grep active_cu_number` shows the number). **On by default from v1.1** | Set it to `=0` if games crash, freeze or show glitches (see Troubleshooting) |
 | `systemd.wants=sshd.service` | Starts SSH at boot | Only v1.0.6 and older; SSH is on by default from v1.0.7 |
 | `lsm=landlock,lockdown,yama,integrity,apparmor,bpf` | Needed for Game Mode | **Don't remove** (Game Mode falls back to the desktop without it) |
 
@@ -120,6 +120,10 @@ end with a space in front of it, or delete it again to undo.
 - Try another TV/monitor or HDMI port, and try HDCP on and off in the PS5 settings.
 - Last resort: on the USB drive's small FAT32 partition, open `cmdline.txt` and add `amdgpu.force_1080p=1`
   at the end of the line.
+
+**Games crash, freeze or show graphics glitches**: v1.1 uses all 40 GPU compute units. To go back to the
+PS5's normal 36, change `amdgpu.ps5_cu_unlock=3` to `amdgpu.ps5_cu_unlock=0` in `cmdline.txt` and reboot
+(`=0` rather than deleting it, so a later in-place update doesn't switch it back on).
 
 **Boots back into the PS5 menu**: you pressed the power button too early, or the USB power setting isn't
 set to `Always`.

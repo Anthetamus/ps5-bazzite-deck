@@ -10,7 +10,7 @@ All notable changes to the images. Exact upstream versions are in each release's
 - **1440p60 offered** when a TV/monitor lists 1440p only at other refresh rates, using the standard 1440p60 timing
 - **Fix: squeezed, discoloured picture on some 4K TVs** (whole picture in the left half): modes the TV only accepts as YCbCr 4:2:0 are skipped; the next mode (usually 1080p) is used. Turning on the TV's enhanced HDMI mode for that port gives 4K60
 - Hotplug detection runs on the kernel's general work queue (removes a "hogged CPU" warning)
-- Documented `amdgpu.ps5_cu_unlock=3` (all 40 GPU compute units, opt-in)
+- **All 40 GPU compute units enabled by default** (`amdgpu.ps5_cu_unlock=3` in `cmdline.txt`, also added by the in-place update unless a `ps5_cu_unlock` setting is already there); set it to `=0` to go back to 36
 
 ## [v1.0.7] – 2026-10-
 - **Fix: black screen at boot on some TVs.** The two event sequences that v1.0.6 enabled (from ps5-linux-patches #43) are off again: on some TVs they made the chip re-announce the TV during the first picture setup, link training failed and the screen stayed black. Was v1.0.6 hotfix 1

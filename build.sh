@@ -42,6 +42,7 @@ grep -q kernel73 "$B" && grep -q "ps5-iw620-he.patch" "$B" && ! grep -q "CONFIG_
 sed -i 's/preempt=full$/preempt=full lsm=landlock,lockdown,yama,integrity,apparmor,bpf/' boot/cmdline.txt
 # video=DP-1:1920x1080@60 is rejected by the kernel on every connector probe ("User-defined mode not supported"); drop it
 sed -i 's/ video=DP-1:1920x1080@60//' boot/cmdline.txt
+grep -q 'ps5_cu_unlock' boot/cmdline.txt || sed -i 's/[[:space:]]*$/ amdgpu.ps5_cu_unlock=3/' boot/cmdline.txt   # all 40 GPU compute units
 grep -q 'video=' boot/cmdline.txt && { echo 'cmdline edit failed'; exit 1; }
 # 2d. kernel 7.3 compat patch for the IW620 Wi-Fi driver (from this repo)
 mkdir -p extra-patches
@@ -79,6 +80,7 @@ trap cleanup EXIT
 sudo mount "${LOOP}p2" "$BOOT"      # FAT32 boot
 sudo mount "${LOOP}p1" "$ROOT"      # ext4 root
 grep -q "lsm=" "$BOOT/cmdline.txt" || sudo sed -i 's/[[:space:]]*$/ lsm=landlock,lockdown,yama,integrity,apparmor,bpf/' "$BOOT/cmdline.txt"
+grep -q "ps5_cu_unlock" "$BOOT/cmdline.txt" || sudo sed -i 's/[[:space:]]*$/ amdgpu.ps5_cu_unlock=3/' "$BOOT/cmdline.txt"
 echo "    cmdline: $(cat "$BOOT/cmdline.txt")"
 echo "options moal ps_mode=0" | sudo tee "$ROOT/etc/modprobe.d/ps5-iw620.conf" >/dev/null
 sudo install -Dm644 "$SRC/files/99-ps5-iw620.conf" "$ROOT/etc/NetworkManager/conf.d/99-ps5-iw620.conf"        # IW620: stable MAC during scans
