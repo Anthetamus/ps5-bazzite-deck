@@ -13,6 +13,7 @@ All notable changes to the images. Exact upstream versions are in each release's
 - **All 40 GPU compute units enabled by default** (`amdgpu.ps5_cu_unlock=3` in `cmdline.txt`, also added by the in-place update unless a `ps5_cu_unlock` setting is already there); set it to `=0` to go back to 36
 - Hotplug detection runs on the kernel's general work queue (removes a "hogged CPU" warning); the 1440p timing adjustment is logged only when it changes
 - Build: the in-place update bundle is made before the 7-Zip volumes; `SKIP_7Z=1` for test builds
+- In-place update: finds the USB drive's boot partition by itself (`/efi`, `/boot/efi` on M.2 installs, or mounts it by its label)
 - README: troubleshooting steps (PS5 settings, loader, `cmdline.txt` options), USB port speeds per model, simpler M.2 installation, loader links to rmuxwashere/ps5-linux-loader
 
 ## [v1.0.7] – 2026-10-22

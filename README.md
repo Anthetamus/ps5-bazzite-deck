@@ -44,7 +44,14 @@ If you reset the PS5 settings, set these again.
    You get `ps5-bazzite-deck.img`.
 3. **Flash** it to the USB drive with [Rufus](https://rufus.ie): select the drive, select the `.img`, click Start.
    This erases the drive.
-4. **Plug** the drive into the PS5: a rear Type-A port or the front Type-C port (not the front Type-A, it's slow).
+4. **Plug** the drive into a fast USB port. Every PS5 has fast ports (SuperSpeed, 10 Gbit/s) and one slow port
+   (Hi-Speed, the older USB 2.0 speed of 480 Mbit/s). A slow port works, but booting, loading and installing
+   games become much slower.
+   - **Original PS5:** the two **rear** USB-A ports or the **front USB-C** port. The front USB-A port is the slow one.
+   - **PS5 Slim:** the two **rear** USB-A ports. One of the two front USB-C ports is the slow one, so the rear
+     ports are the safe choice.
+
+   Use the slow port for a controller or keyboard.
 5. **Run the jailbreak and the loader** as described in the loader's instructions. The PS5 goes into rest mode;
    wait until the orange light stops blinking, then press the power button. A **white light** means Linux is booting.
 6. **First boot is slow.** The screen can stay black for a few minutes. Let it be.
@@ -94,13 +101,28 @@ All steps run on the PS5, booted from the USB, in a terminal (password `ps5`).
 To go back to the USB system, change `bazzite-deck-m2` back to `bazzite-deck` in `cmdline.txt`.
 
 Notes:
-- Updating: run the in-place update while booted from the M.2.
+- Updating: run the in-place update while booted from the M.2, with the USB drive plugged in. The update script
+  finds the USB drive's boot partition by itself: on an M.2 install it is often mounted at `/boot/efi` instead of
+  `/efi`, or not at all.
+- Commands in this README that edit `/efi/cmdline.txt`: on an M.2 install use `/boot/efi/cmdline.txt` if that's
+  where it is mounted, or edit `cmdline.txt` from your PC.
 - Stuck in emergency mode when booting the M.2: its `/etc/fstab` may contain a boot-partition line with an empty
   `UUID=`. Replace that line with `LABEL=boot /efi vfat defaults,nofail 0 2` (mount the M.2 from the USB system
   with `sudo mount LABEL=bazzite-deck-m2 /mnt` to edit it).
 
-## cmdline.txt options
+## Troubleshooting
 
+If something doesn't work, go through these three first.
+
+### 1. PS5 settings
+Check the settings from [PS5 settings](#ps5-settings-do-this-first): **HDMI Device Link off** and
+**Supply Power to USB Ports: Always**. A reset or a firmware update of the PS5 can change them back.
+
+### 2. Linux loader
+Use the latest loader for your firmware from the [PS5 Linux loader releases](https://github.com/rmuxwashere/ps5-linux-loader/releases). An older loader, or one for a
+different firmware, typically ends up back in the PS5 menu or with no white light at all.
+
+### 3. Boot options (`cmdline.txt`)
 `cmdline.txt` is on the USB drive's small FAT32 partition and must stay **one single line**: add an option at the
 end with a space in front of it, or delete it again to undo.
 
@@ -108,11 +130,11 @@ end with a space in front of it, or delete it again to undo.
 |---|---|---|
 | `amdgpu.force_1080p=1` | Only allows 1080p60 | Black or garbled picture you can't get past |
 | `hdmi.rearm=0` | Turns off the "picture comes back when the TV wakes up" fix | The picture flickers or goes black right after appearing, e.g. after re-plugging HDMI |
-| `amdgpu.ps5_cu_unlock=3` | Uses all 40 GPU compute units instead of 36 (`dmesg \| grep active_cu_number` shows the number). **On by default from v1.1** | Set it to `=0` if games crash, freeze or show glitches (see Troubleshooting) |
+| `amdgpu.ps5_cu_unlock=3` | Uses all 40 GPU compute units instead of 36 (`dmesg \| grep active_cu_number` shows the number). **On by default from v1.1** | Set it to `=0` if games crash, freeze or show glitches (see Common problems below) |
 | `systemd.wants=sshd.service` | Starts SSH at boot | Only v1.0.6 and older; SSH is on by default from v1.0.7 |
 | `lsm=landlock,lockdown,yama,integrity,apparmor,bpf` | Needed for Game Mode | **Don't remove** (Game Mode falls back to the desktop without it) |
 
-## Troubleshooting
+### Common problems
 
 **White light but black screen**
 - Check HDMI Device Link is off (see PS5 settings).
