@@ -99,18 +99,20 @@ Notes:
   `UUID=`. Replace that line with `LABEL=boot /efi vfat defaults,nofail 0 2` (mount the M.2 from the USB system
   with `sudo mount LABEL=bazzite-deck-m2 /mnt` to edit it).
 
-## Troubleshooting
+## cmdline.txt options
 
-**`cmdline.txt` options.** The file is on the USB drive's small FAT32 partition and must stay **one single line**:
-add an option at the end with a space in front of it, or delete it again to undo.
+`cmdline.txt` is on the USB drive's small FAT32 partition and must stay **one single line**: add an option at the
+end with a space in front of it, or delete it again to undo.
 
 | Option | What it does | When to use it |
 |---|---|---|
-| `hdmi.allow_1440p120=1` | Makes 1440p120 available | Your TV/monitor offers 1440p120 |
-| `amdgpu.force_1080p=1` | Only allows 1080p60 | Black or garbled picture you can't get past; TVs that squeeze the whole picture into the left half at 4K |
+| `amdgpu.force_1080p=1` | Only allows 1080p60 | Black or garbled picture you can't get past |
 | `hdmi.rearm=0` | Turns off the "picture comes back when the TV wakes up" fix | The picture flickers or goes black right after appearing, e.g. after re-plugging HDMI |
+| `amdgpu.ps5_cu_unlock=3` | Uses all 40 GPU compute units instead of 36 (`dmesg \| grep active_cu_number` shows the number) | More GPU power. Sony switched the extra 4 off; on some consoles they may be faulty, so remove it if games crash, freeze or show glitches |
 | `systemd.wants=sshd.service` | Starts SSH at boot | Only v1.0.6 and older; SSH is on by default from v1.0.7 |
 | `lsm=landlock,lockdown,yama,integrity,apparmor,bpf` | Needed for Game Mode | **Don't remove** (Game Mode falls back to the desktop without it) |
+
+## Troubleshooting
 
 **White light but black screen**
 - Check HDMI Device Link is off (see PS5 settings).
@@ -136,7 +138,7 @@ and send `log.txt` from the small FAT32 partition in [Discord](https://discord.g
 
 - **Does this touch my PS5's games or system?** No. Everything is on the USB drive.
 - **Can I dual-boot?** No. You run the jailbreak + loader each time you want Linux.
-- **120 Hz?** 1080p120 works if your TV/monitor offers it. 1440p120 is experimental: add ` hdmi.allow_1440p120=1` to the line in `cmdline.txt`.
+- **120 Hz?** 1080p120 works if your TV/monitor offers it. 1440p120 is on by default from v1.1 if your TV/monitor offers it, and 1440p60 is offered too.
 - **HDR?** Not working yet. Keep it off (see First boot).
 - **"Your PS5 wasn't turned off properly" after using Linux?** Normal and harmless.
 - **Can I install apps?** Yes: use the Discover store / Flatpak. `dnf5 install` works for system packages;
