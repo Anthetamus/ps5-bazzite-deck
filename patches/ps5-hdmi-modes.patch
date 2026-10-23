@@ -11,7 +11,6 @@ PS5 HDMI resolutions                                      [ps5-bazzite-deck]
 4. Skip modes the sink accepts only as YCbCr 4:2:0: the bridge always sends
    them labelled as RGB (half-width, discoloured picture). The next mode,
    usually 1080p, is used instead.
-
 diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
 index 1a9d9fb41..910d450e4 100644
 --- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
@@ -55,7 +54,7 @@ index 1a9d9fb41..910d450e4 100644
  			amdgpu_dm_connector_add_common_modes(encoder, connector);
  		amdgpu_dm_connector_add_freesync_modes(connector, drm_edid);
 diff --git a/drivers/ps5/hdmi.c b/drivers/ps5/hdmi.c
-index 6dc503d04..09bedcdb3 100644
+index 6dc503d04..0aaeb8e16 100644
 --- a/drivers/ps5/hdmi.c
 +++ b/drivers/ps5/hdmi.c
 @@ -2,6 +2,8 @@
@@ -143,15 +142,22 @@ index 6dc503d04..09bedcdb3 100644
  		return mode->clock == 241500 || mode->clock == 241700;
  	}
  
-@@ -1254,6 +1271,91 @@ bool isHdmiModeValid(const struct drm_display_mode *mode, int force_1080p)
+@@ -1254,6 +1271,96 @@ bool isHdmiModeValid(const struct drm_display_mode *mode, int force_1080p)
  }
  EXPORT_SYMBOL(isHdmiModeValid);
  
 +/*
 + * Many TVs list 1440p only at 120 Hz. On FLAVA3, add the standard 1440p60
-+ * timing (CVT reduced blanking, 241.5 MHz) when the sink offers 1440p but not
-+ * at 60 Hz: it is the timing the bridge's 1440p setup is made for.
++ * timing (VESA DMT 2560x1440@60 reduced blanking, 241.5 MHz) when the sink
++ * offers 1440p but not at 60 Hz: it is the timing the bridge's 1440p setup is
++ * made for (back porches 80 px / 33 lines, so nothing to move).
 + */
++static const struct drm_display_mode ps5_1440p60 = {
++	DRM_MODE("2560x1440", DRM_MODE_TYPE_DRIVER, 241500,
++		 2560, 2608, 2640, 2720, 0, 1440, 1443, 1448, 1481, 0,
++		 DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_NVSYNC)
++};
++
 +int ps5_hdmi_add_modes(struct drm_connector *connector)
 +{
 +	struct drm_display_mode *m, *mode;
@@ -170,17 +176,11 @@ index 6dc503d04..09bedcdb3 100644
 +	if (!has_1440)
 +		return 0;
 +
-+	mode = drm_cvt_mode(connector->dev, 2560, 1440, 60, true, false, false);
++	mode = drm_mode_duplicate(connector->dev, &ps5_1440p60);
 +	if (!mode)
 +		return 0;
-+	if (mode->clock != 241500 && mode->clock != 241700) {
-+		pr_info("1440p60: unexpected CVT-RB clock %d, not added\n", mode->clock);
-+		drm_mode_destroy(connector->dev, mode);
-+		return 0;
-+	}
-+	mode->type = DRM_MODE_TYPE_DRIVER;
 +	drm_mode_probed_add(connector, mode);
-+	pr_info("added 2560x1440@60 (sink lists 1440p only at other rates)\n");
++	pr_info_once("added 2560x1440@60 (sink lists 1440p only at other rates)\n");
 +	return 1;
 +}
 +EXPORT_SYMBOL(ps5_hdmi_add_modes);
@@ -211,6 +211,7 @@ index 6dc503d04..09bedcdb3 100644
 +
 +void ps5_hdmi_fixup_timing(struct drm_display_mode *m)
 +{
++	static u16 last_hs, last_vs;
 +	bool h, v;
 +
 +	if (hdmi_ic_type != HDMI_IC_TYPE_FLAVA3 ||
@@ -225,10 +226,13 @@ index 6dc503d04..09bedcdb3 100644
 +		      &m->crtc_hsync_start, &m->crtc_hsync_end);
 +	ps5_move_sync(m->crtc_vdisplay, m->crtc_vtotal, PS5_FLAVA3_1440P_VBP,
 +		      &m->crtc_vsync_start, &m->crtc_vsync_end);
-+	if (h || v)
++	if ((h || v) && (m->hsync_start != last_hs || m->vsync_start != last_vs)) {
++		last_hs = m->hsync_start;
++		last_vs = m->vsync_start;
 +		pr_info("FLAVA3 1440p: syncs moved for back porch %d/%d (hsync %d-%d, vsync %d-%d)\n",
 +			PS5_FLAVA3_1440P_HBP, PS5_FLAVA3_1440P_VBP,
 +			m->hsync_start, m->hsync_end, m->vsync_start, m->vsync_end);
++	}
 +}
 +EXPORT_SYMBOL(ps5_hdmi_fixup_timing);
 +
