@@ -1,5 +1,13 @@
+PS5 HDMI: re-arm the output after the same display re-announces itself
+(display already on at boot, woken from standby, power-cycled).
+
+ps5-linux-patches PR #46 by rdmrocha, merged by hand onto #43 (hotplug).
+Kept as its own patch so it can be dropped once it is merged upstream.
+Module parameters: hdmi.rearm, hdmi.rearm_settle_ms, hdmi.rearm_max,
+hdmi.rearm_window_s, hdmi.rearm_trigger (write-only, re-arms now).
+
 diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
-index 94a96db5c..55bfd3833 100644
+index f2d72308b..33120dafa 100644
 --- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
 +++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
 @@ -811,6 +811,11 @@ static int amdgpu_dm_init(struct amdgpu_device *adev)

@@ -22,10 +22,11 @@ Full write-up: [docs/game-mode-fix.md](docs/game-mode-fix.md).
 
 ```
 build.sh                               one-shot build: clone builder, apply fixes, build, post-build, compress
-patches/ps5-iw620-kernel73-compat.patch kernel 7.3 compatibility for the PS5 IW620 Wi-Fi driver (cfg80211 API changes)
-patches/ps5-btusb-quirks-fix.patch     Bluetooth: PS5 IW620 btusb quirks moved to quirks_table (fixes init failure)
-patches/ps5-hdmi-audio-flava3.patch    HDMI audio stability for FLAVA3 HDMI chips (upstream #42, 7.3 port)
-patches/ps5-mt7921-*.patch             MediaTek Bluetooth (WizGery 0003 ported to 7.3, 0004)
+patches/ps5-iw620-kernel73-compat.patch Wi-Fi driver (NXP IW620): kernel 7.3 API changes (applied to the out-of-tree driver)
+patches/ps5-bluetooth.patch            Bluetooth: IW620 quirks table fix, MediaTek bulk-OUT endpoint, L2CAP defer security
+patches/ps5-hdmi-rearm-pr46.patch      HDMI: picture back when the same display wakes up (upstream PR #46, rdmrocha)
+patches/ps5-hdmi-output-fixes.patch    HDMI: FLAVA3 scrambling off below 340 MHz, no FLAVA3 event sequences, hotplug work queue
+patches/ps5-hdmi-modes.patch           HDMI: 1440p120, 1440p60, 1440p sync fixup, skip 4:2:0-only modes
 files/                                 files baked into the image: NetworkManager stable MAC, MediaTek BT udev/modprobe,
                                        boot ordering-cycle fix for ps5-stage-firmware.service
 docs/game-mode-fix.md                  how the Game Mode problem was found and fixed
