@@ -4,6 +4,10 @@ All notable changes to the images. Exact upstream versions are in each release's
 
 ## [Unreleased]
 
+## [v1.1.1] – 2026-10-23
+- **40-CU unlock opt-in again** (`amdgpu.ps5_cu_unlock=3` no longer in the image's `cmdline.txt`): on some consoles the 4 extra compute units cause artifacts (green dots), a purple tint or crashes (silicon lottery). The in-place update switches it off once for installs coming from v1.1.0; after that, a setting you add yourself is kept across updates. README: section "40 GPU compute units (optional)" with on/off commands
+- Same kernel and drivers as v1.1.0
+
 ## [v1.1.0] – 2026-10-23
 - Based on rmux's latest PS5 patches (`meower` @ 34bcc15): HDMI audio (#42) and HDMI hotplug (#43) now come from upstream; our own ports of both are dropped
 - Kernel patches consolidated by purpose into four files: `ps5-bluetooth`, `ps5-hdmi-rearm-pr46` (kept separate until it is merged upstream), `ps5-hdmi-output-fixes`, `ps5-hdmi-modes` (plus the Wi-Fi driver's `ps5-iw620-kernel73-compat`)

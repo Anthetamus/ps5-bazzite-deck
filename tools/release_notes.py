@@ -12,7 +12,7 @@ own VERSIONS.md (downloaded from the release) and its actual asset list.
 import json, os, re, subprocess, sys, tempfile
 
 REPO = "VivaLaVent/ps5-bazzite-deck"
-TAGS = ["v1.0.3", "v1.0.4", "v1.0.5", "v1.0.6", "v1.0.7", "v1.1.0"]
+TAGS = ["v1.0.3", "v1.0.4", "v1.0.5", "v1.0.6", "v1.0.7", "v1.1.0", "v1.1.1"]
 DISCORD = "https://discord.gg/f8QARgNkf5"
 SRC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = "/tmp/release-notes"

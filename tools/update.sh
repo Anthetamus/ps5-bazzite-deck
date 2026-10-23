@@ -39,8 +39,16 @@ echo "==> system settings"
 while read -r src dst; do [ -n "$src" ] && sudo install -Dm644 "files/$src" "$dst"; done < FILES
 sudo sed -i 's/ video=DP-1:1920x1080@60//' "$EFI/cmdline.txt"
 sudo grep -q "lsm=" "$EFI/cmdline.txt" || sudo sed -i 's/[[:space:]]*$/ lsm=landlock,lockdown,yama,integrity,apparmor,bpf/' "$EFI/cmdline.txt"
-# all 40 GPU compute units, unless the user already chose a ps5_cu_unlock setting
-sudo grep -q "ps5_cu_unlock" "$EFI/cmdline.txt" || sudo sed -i 's/[[:space:]]*$/ amdgpu.ps5_cu_unlock=3/' "$EFI/cmdline.txt"
+# GPU compute units: 40 (amdgpu.ps5_cu_unlock=3) is opt-in again from v1.1.1 (silicon lottery: the extra 4
+# can be faulty). v1.1.0 switched it on for everyone, so switch it off once for installs coming from v1.1.0.
+# From then on a setting the user adds is never touched.
+case "$(cat /etc/ps5-bazzite-deck-version 2>/dev/null)" in
+  v1.1.0|v1.1.0-*)
+    if sudo grep -q "amdgpu.ps5_cu_unlock=3" "$EFI/cmdline.txt"; then
+      sudo sed -i 's/ *amdgpu\.ps5_cu_unlock=3//' "$EFI/cmdline.txt"
+      echo "    40-CU unlock switched off (opt-in from v1.1.1; see the README to switch it on again)"
+    fi ;;
+esac
 echo "$V" | sudo tee /etc/ps5-bazzite-deck-version >/dev/null
 sync
 [ "$MOUNTED" = 1 ] && sudo umount "$EFI"

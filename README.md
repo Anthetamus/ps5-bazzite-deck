@@ -110,6 +110,27 @@ Notes:
   `UUID=`. Replace that line with `LABEL=boot /efi vfat defaults,nofail 0 2` (mount the M.2 from the USB system
   with `sudo mount LABEL=bazzite-deck-m2 /mnt` to edit it).
 
+## 40 GPU compute units (optional)
+
+The PS5's GPU has 40 compute units (CUs); Sony ships it with 36 active. The other 4 were switched off at the
+factory, partly because on some chips one of them is faulty. That's the **silicon lottery**: on many consoles all
+40 work and you get more GPU power, on others the extra units cause green dots and other artifacts, a purple
+tint, or crashes. Try it, and switch it back off if you see any of that.
+
+**Switch on** (in a terminal or over SSH), then reboot and run the loader:
+```
+sudo sed -i -e 's/amdgpu\.ps5_cu_unlock=[0-9]*/amdgpu.ps5_cu_unlock=3/' -e '/ps5_cu_unlock/!s/[[:space:]]*$/ amdgpu.ps5_cu_unlock=3/' /efi/cmdline.txt && sudo cat /efi/cmdline.txt
+```
+**Check:** `dmesg | grep active_cu_number` shows `40` (36 without it).
+
+**Switch off** again:
+```
+sudo sed -i 's/ *amdgpu\.ps5_cu_unlock=[0-9]*//' /efi/cmdline.txt && sudo cat /efi/cmdline.txt
+```
+
+Your setting stays as it is across in-place updates (from v1.1.1). On an M.2 install, use `/boot/efi/cmdline.txt`
+instead of `/efi/cmdline.txt` if that's where the boot partition is mounted.
+
 ## Troubleshooting
 
 If something doesn't work, go through these three first.
@@ -130,7 +151,7 @@ end with a space in front of it, or delete it again to undo.
 |---|---|---|
 | `amdgpu.force_1080p=1` | Only allows 1080p60 | Black or garbled picture you can't get past |
 | `hdmi.rearm=0` | Turns off the "picture comes back when the TV wakes up" fix | The picture flickers or goes black right after appearing, e.g. after re-plugging HDMI |
-| `amdgpu.ps5_cu_unlock=3` | Uses all 40 GPU compute units instead of 36 (`dmesg \| grep active_cu_number` shows the number). **On by default from v1.1** | Set it to `=0` if games crash, freeze or show glitches (see Common problems below) |
+| `amdgpu.ps5_cu_unlock=3` | Uses all 40 GPU compute units instead of 36. **Opt-in**, see [40 GPU compute units](#40-gpu-compute-units-optional) | You want more GPU power and your console's extra units work |
 | `systemd.wants=sshd.service` | Starts SSH at boot | Only v1.0.6 and older; SSH is on by default from v1.0.7 |
 | `lsm=landlock,lockdown,yama,integrity,apparmor,bpf` | Needed for Game Mode | **Don't remove** (Game Mode falls back to the desktop without it) |
 
@@ -143,9 +164,8 @@ end with a space in front of it, or delete it again to undo.
 - Last resort: on the USB drive's small FAT32 partition, open `cmdline.txt` and add `amdgpu.force_1080p=1`
   at the end of the line.
 
-**Games crash, freeze or show graphics glitches**: v1.1 uses all 40 GPU compute units. To go back to the
-PS5's normal 36, change `amdgpu.ps5_cu_unlock=3` to `amdgpu.ps5_cu_unlock=0` in `cmdline.txt` and reboot
-(`=0` rather than deleting it, so a later in-place update doesn't switch it back on).
+**Games crash, freeze, or show green dots, artifacts or a purple tint**: if you switched on the 40-CU unlock,
+switch it off again (see [40 GPU compute units](#40-gpu-compute-units-optional)) and reboot.
 
 **Boots back into the PS5 menu**: you pressed the power button too early, or the USB power setting isn't
 set to `Always`.
