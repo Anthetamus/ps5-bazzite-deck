@@ -4,16 +4,19 @@ All notable changes to the images. Exact upstream versions are in each release's
 
 ## [Unreleased]
 
-## [v1.1.0] – 2026-10-<DD>
-- Based on rmux's latest PS5 patches (`meower` HEAD): HDMI audio (#42) and HDMI hotplug (#43) now come from upstream; our own ports of both are dropped
+## [v1.1.0] – 2026-10-23
+- Based on rmux's latest PS5 patches (`meower` @ 34bcc15): HDMI audio (#42) and HDMI hotplug (#43) now come from upstream; our own ports of both are dropped
+- Kernel patches consolidated by purpose into four files: `ps5-bluetooth`, `ps5-hdmi-rearm-pr46` (kept separate until it is merged upstream), `ps5-hdmi-output-fixes`, `ps5-hdmi-modes` (plus the Wi-Fi driver's `ps5-iw620-kernel73-compat`)
 - **1440p120 always available** when the TV/monitor offers it; the `hdmi.allow_1440p120` option is removed
-- **1440p60 offered** when a TV/monitor lists 1440p only at other refresh rates, using the standard 1440p60 timing
+- **1440p60 offered** when a TV/monitor lists 1440p only at other refresh rates, using the standard VESA 1440p60 timing (241.5 MHz)
 - **Fix: squeezed, discoloured picture on some 4K TVs** (whole picture in the left half): modes the TV only accepts as YCbCr 4:2:0 are skipped; the next mode (usually 1080p) is used. Turning on the TV's enhanced HDMI mode for that port gives 4K60
-- Hotplug detection runs on the kernel's general work queue (removes a "hogged CPU" warning)
 - **All 40 GPU compute units enabled by default** (`amdgpu.ps5_cu_unlock=3` in `cmdline.txt`, also added by the in-place update unless a `ps5_cu_unlock` setting is already there); set it to `=0` to go back to 36
+- Hotplug detection runs on the kernel's general work queue (removes a "hogged CPU" warning); the 1440p timing adjustment is logged only when it changes
+- Build: the in-place update bundle is made before the 7-Zip volumes; `SKIP_7Z=1` for test builds
+- README: troubleshooting steps (PS5 settings, loader, `cmdline.txt` options), USB port speeds per model, simpler M.2 installation, loader links to rmuxwashere/ps5-linux-loader
 
 ## [v1.0.7] – 2026-10-22
-- **Fix: black screen at boot on some TVs.** The two event sequences that v1.0.6 enabled (from ps5-linux-patches #43) are off again: on some TVs they made the chip re-announce the TV during the first picture setup, link training failed and the screen stayed black. Was v1.0.6 hotfix 1
+- **Fix: black screen at boot on some TVs.** The two event sequences that v1.0.6 enabled (from ps5-linux-patches #43) are off again: on some TVs they made the chip re-announce the TV during the first picture setup, link training failed and the screen stayed black.
 - **Fix: 1440p picture shifted.** The chip places a 1440p picture as if the signal had the back porches of the standard 1440p60 reduced-blanking timing (80 px / 33 lines); other 1440p timings (the desktop's generated 1440p60, a TV's 1440p120) were shifted right or down. The sync pulses are now moved so the back porches match; resolution, totals and refresh rate are unchanged
 - SSH is enabled by default (user `ps5`, password `ps5`; change it with `passwd`)
 - Kernel: `CONFIG_MODULE_ALLOW_BTF_MISMATCH=y`, so kernel-only hotfixes keep loading the release's modules
@@ -23,6 +26,7 @@ All notable changes to the images. Exact upstream versions are in each release's
 - **HDMI hotplug**: switching to a different display or re-plugging the cable is detected, and the picture and HDMI audio are set up again. ps5-linux-patches #43, ported to the 7.3 display code
 - **Fix: no signal after switching down from 4K** (e.g. to 1080p or 1080p120): 4K60 turns HDMI 2.0 scrambling on in the TV, and it was never turned off again for lower modes. Now it is. 1080p120 works
 - **1440p120, experimental and opt-in**: add `hdmi.allow_1440p120=1` to `cmdline.txt`. Uses the 4K60 high-bandwidth setup
+- **In-place updates**: an update bundle (`tools/update.sh`) brings earlier installs to the new version without reflashing; kernel, modules and settings, with a backup
 
 ## [v1.0.5] – 2026-10-22
 - **Fix: services randomly missing after the first reboot** (no Wi-Fi/Ethernet because NetworkManager never started, Switch to Desktop dropping back to Game Mode). Cause: the image builder's `ps5-stage-firmware.service` creates a systemd ordering cycle (`Before=systemd-modules-load` with default dependencies, i.e. also after `basic.target`); systemd breaks it by deleting a different job each boot. Fixed with a drop-in setting `DefaultDependencies=no`. Affected v1.0.3 and v1.0.4 on all models
@@ -37,7 +41,7 @@ All notable changes to the images. Exact upstream versions are in each release's
 - Boot: dropped the ignored `video=DP-1:1920x1080@60` from `cmdline.txt` (was logging "User-defined mode not supported" on every boot)
 
 ## [v1.0.3] – 2026-10-20
-- **Bluetooth works**: the 7.3 PS5 patch registered the IW620 Bluetooth device (`1286:2059`) in the wrong `btusb` table, so its quirks never applied (two `hci` devices, `Opcode 0x2031 failed`). `patches/ps5-btusb-quirks-fix.patch` moves the entry to `quirks_table` and the interface-0 check after the quirks lookup. Only `btusb.ko` changed; a hotfix module for v1.0.2 is attached to the release.
+- **Bluetooth works**: the 7.3 PS5 patch registered the IW620 Bluetooth device (`1286:2059`) in the wrong `btusb` table, so its quirks never applied (two `hci` devices, `Opcode 0x2031 failed`). The fix (now part of `patches/ps5-bluetooth.patch`) moves the entry to `quirks_table` and the interface-0 check after the quirks lookup. Only `btusb.ko` changed; a hotfix module for v1.0.2 is attached to the release.
 
 ## [v1.0.2] – 2026-10-20
 First working public release.
