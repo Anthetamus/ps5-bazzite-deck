@@ -12,19 +12,19 @@ All notable changes to the images. Exact upstream versions are in each release's
 - Hotplug detection runs on the kernel's general work queue (removes a "hogged CPU" warning)
 - **All 40 GPU compute units enabled by default** (`amdgpu.ps5_cu_unlock=3` in `cmdline.txt`, also added by the in-place update unless a `ps5_cu_unlock` setting is already there); set it to `=0` to go back to 36
 
-## [v1.0.7] – 2026-10-
+## [v1.0.7] – 2026-10-22
 - **Fix: black screen at boot on some TVs.** The two event sequences that v1.0.6 enabled (from ps5-linux-patches #43) are off again: on some TVs they made the chip re-announce the TV during the first picture setup, link training failed and the screen stayed black. Was v1.0.6 hotfix 1
 - **Fix: 1440p picture shifted.** The chip places a 1440p picture as if the signal had the back porches of the standard 1440p60 reduced-blanking timing (80 px / 33 lines); other 1440p timings (the desktop's generated 1440p60, a TV's 1440p120) were shifted right or down. The sync pulses are now moved so the back porches match; resolution, totals and refresh rate are unchanged
 - SSH is enabled by default (user `ps5`, password `ps5`; change it with `passwd`)
 - Kernel: `CONFIG_MODULE_ALLOW_BTF_MISMATCH=y`, so kernel-only hotfixes keep loading the release's modules
 
-## [v1.0.6] – 2026-10-
+## [v1.0.6] – 2026-10-22
 - **HDMI: picture comes back when the display wakes up** (display already on at boot, woken from standby, power-cycled): the HDMI bridge is set up again after the display re-announces itself. ps5-linux-patches #46 (rdmrocha), merged by hand onto #43. Off switch: add `hdmi.rearm=0` to `cmdline.txt`
 - **HDMI hotplug**: switching to a different display or re-plugging the cable is detected, and the picture and HDMI audio are set up again. ps5-linux-patches #43, ported to the 7.3 display code
 - **Fix: no signal after switching down from 4K** (e.g. to 1080p or 1080p120): 4K60 turns HDMI 2.0 scrambling on in the TV, and it was never turned off again for lower modes. Now it is. 1080p120 works
 - **1440p120, experimental and opt-in**: add `hdmi.allow_1440p120=1` to `cmdline.txt`. Uses the 4K60 high-bandwidth setup
 
-## [v1.0.5] – 2026-10-
+## [v1.0.5] – 2026-10-22
 - **Fix: services randomly missing after the first reboot** (no Wi-Fi/Ethernet because NetworkManager never started, Switch to Desktop dropping back to Game Mode). Cause: the image builder's `ps5-stage-firmware.service` creates a systemd ordering cycle (`Before=systemd-modules-load` with default dependencies, i.e. also after `basic.target`); systemd breaks it by deleting a different job each boot. Fixed with a drop-in setting `DefaultDependencies=no`. Affected v1.0.3 and v1.0.4 on all models
 - MediaTek Wi-Fi (PS5 Slim) confirmed working by a tester; MediaTek Bluetooth still unconfirmed
 
