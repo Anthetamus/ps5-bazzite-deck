@@ -4,3 +4,4 @@
 *.part-*
 output/
 work/
+__pycache__/

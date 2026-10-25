@@ -7,7 +7,7 @@ desktop is one click away.
 It runs from a USB drive, through the [PS5 Linux loader](https://github.com/rmuxwashere/ps5-linux-loader/releases).
 Your PS5 itself is not modified: unplug the drive and it's a normal PS5 again.
 
-**Download:** [Releases](../../releases) · **Help & testing:** [Discord](https://discord.gg/f8QARgNkf5)
+**Download:** [Releases](../../releases) · **Help & testing:** [Discord](https://discord.gg/qGcuTgBBYU)
 
 ## What works
 
@@ -74,7 +74,7 @@ Reflashing always works too (back up anything you want to keep from the drive fi
 
 The USB drive stays required: the PS5 loader always starts the kernel from its small FAT32
 partition. The M.2 holds the system. Install the **same version** on the M.2 as on the USB.
-If a step doesn't work for you, tell us in [Discord](https://discord.gg/f8QARgNkf5).
+If a step doesn't work for you, tell us in [Discord](https://discord.gg/qGcuTgBBYU).
 
 All steps run on the PS5, booted from the USB, in a terminal (password `ps5`).
 
@@ -179,14 +179,14 @@ sudo mkdir -p /etc/systemd/system/ps5-stage-firmware.service.d && printf '[Unit]
 ```
 
 **Display or HDMI problems**: run this on the PS5 (terminal or SSH) while the problem is visible, and send the
-file it names in [Discord](https://discord.gg/f8QARgNkf5):
+file it names in [Discord](https://discord.gg/qGcuTgBBYU):
 ```
 curl -fsSL https://raw.githubusercontent.com/VivaLaVent/ps5-bazzite-deck/main/tools/diag.sh | bash
 ```
 
 **Sending logs** (we can't help without them): in a terminal run
 `journalctl -b --no-pager > /tmp/log.txt; sudo cp /tmp/log.txt /efi/`, shut down, plug the drive into your PC
-and send `log.txt` from the small FAT32 partition in [Discord](https://discord.gg/f8QARgNkf5).
+and send `log.txt` from the small FAT32 partition in [Discord](https://discord.gg/qGcuTgBBYU).
 
 ## FAQ
 

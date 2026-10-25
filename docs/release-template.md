@@ -31,4 +31,4 @@
 - `*.patch` – kernel and driver patches used in this build
 
 ---
-Questions, bug reports, test results: **Discord https://discord.gg/f8QARgNkf5**
+Questions, bug reports, test results: **Discord https://discord.gg/qGcuTgBBYU**

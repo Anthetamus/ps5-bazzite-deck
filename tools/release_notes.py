@@ -13,7 +13,7 @@ import json, os, re, subprocess, sys, tempfile
 
 REPO = "VivaLaVent/ps5-bazzite-deck"
 TAGS = ["v1.0.3", "v1.0.4", "v1.0.5", "v1.0.6", "v1.0.7", "v1.1.0", "v1.1.1", "v1.2.0", "v1.3.0"]
-DISCORD = "https://discord.gg/f8QARgNkf5"
+DISCORD = "https://discord.gg/qGcuTgBBYU"
 SRC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = "/tmp/release-notes"
 
