@@ -12,7 +12,11 @@ own VERSIONS.md (downloaded from the release) and its actual asset list.
 import json, os, re, subprocess, sys, tempfile
 
 REPO = "VivaLaVent/ps5-bazzite-deck"
-TAGS = ["v1.0.3", "v1.0.4", "v1.0.5", "v1.0.6", "v1.0.7", "v1.1.0", "v1.1.1", "v1.2.0", "v1.3.0"]
+def _tags():
+    d = os.path.join(SRC, "docs/release-notes")
+    tags = [f[:-3] for f in os.listdir(d) if re.fullmatch(r"v\d+\.\d+\.\d+\.md", f)]
+    return sorted(tags, key=lambda t: tuple(int(x) for x in t[1:].split(".")))
+
 DISCORD = "https://discord.gg/qGcuTgBBYU"
 KOFI = "https://ko-fi.com/vivalavent"
 SRC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -88,7 +92,7 @@ def render(tag, tmp):
 def main():
     dry = "--dry-run" in sys.argv
     os.makedirs(OUT, exist_ok=True)
-    for tag in TAGS:
+    for tag in _tags():
         try:
             with tempfile.TemporaryDirectory() as tmp:
                 notes = render(tag, tmp)

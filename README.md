@@ -67,9 +67,13 @@ If you reset the PS5 settings, set these again.
 
 ## Updating
 
-From v1.0.3 or newer you can update **without reflashing**: one update bundle brings you to the
-latest version and keeps your games and settings. See [docs/updating.md](docs/updating.md).
-Reflashing always works too (back up anything you want to keep from the drive first).
+From v1.0.3 or newer you can update **without reflashing**; your games and settings stay. On the PS5
+(in a terminal or over SSH, password `ps5`):
+```
+bash <(curl -fsSL https://raw.githubusercontent.com/VivaLaVent/ps5-bazzite-deck/main/tools/update-latest.sh)
+```
+Then reboot and run the loader. Details: [docs/updating.md](docs/updating.md). Reflashing always works too
+(back up anything you want to keep from the drive first).
 
 ## Installing to the PS5's internal M.2 (advanced)
 
