@@ -4,72 +4,73 @@ PS5 HDMI output fixes                                     [ps5-bazzite-deck]
    event sequences that #43 enabled (black screen at boot on some TVs).
 2. Re-arm (#46) only when the same sink re-announces itself (EDID checksum);
    FLAVA3's "picture up" (0x04) cancels a pending re-arm, like Verde's 0x03.
-3. Cap the output at 8 bits per colour (DRM core, PS5 only), except HDR on
-   FLAVA3 at 1080p60/2160p60, which amdgpu sends as 12 bpc YCbCr 4:2:2.
+3. 8 bits per colour only (PS5): the "max bpc" property offers 8..8 and
+   every commit is capped at 8 in the DRM core; the bridges show deeper RGB
+   as posterized contours. HDR on FLAVA3 is sent as 12 bpc YCbCr 4:2:2 by
+   amdgpu independently of this.
+4. No "scaling mode" property on the PS5: compositors (KWin) add generated
+   resolutions on connectors that can scale; the bridge only has a setup for
+   its own few modes.
 ---
 
-diff --git a/drivers/gpu/drm/drm_atomic.c b/drivers/gpu/drm/drm_atomic.c
-index e5c8ef06c..164142feb 100644
---- a/drivers/gpu/drm/drm_atomic.c
-+++ b/drivers/gpu/drm/drm_atomic.c
-@@ -29,6 +29,9 @@
- #include <linux/export.h>
- #include <linux/sync_file.h>
+diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
+index 6ddb9cfbc..d0f0c0c28 100644
+--- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
++++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
+@@ -3329,9 +3329,16 @@ void amdgpu_dm_connector_init_helper(struct amdgpu_display_manager *dm,
+ 		break;
+ 	}
  
-+#include <linux/hdmi.h>
-+#include <linux/ps5.h>
-+#include <drm/drm_edid.h>
- #include <drm/drm_atomic.h>
- #include <drm/drm_atomic_uapi.h>
- #include <drm/drm_blend.h>
-@@ -561,6 +564,35 @@ static void drm_atomic_crtc_print_state(struct drm_printer *p,
- 		crtc->funcs->atomic_print_state(p, state);
- }
++#ifndef CONFIG_X86_PS5
++	/*
++	 * Not on the PS5: compositors such as KWin offer extra, generated
++	 * resolutions on connectors that can scale, and the HDMI bridge only has
++	 * a setup for its own few modes.
++	 */
+ 	drm_object_attach_property(&aconnector->base.base,
+ 				dm->ddev->mode_config.scaling_mode_property,
+ 				DRM_MODE_SCALE_NONE);
++#endif
+ 
+ 	if (connector_type == DRM_MODE_CONNECTOR_HDMIA
+ 		|| (connector_type == DRM_MODE_CONNECTOR_DisplayPort && !aconnector->mst_root))
+@@ -3347,10 +3354,21 @@ void amdgpu_dm_connector_init_helper(struct amdgpu_display_manager *dm,
+ 				adev->mode_info.underscan_vborder_property,
+ 				0);
  
 +#ifdef CONFIG_X86_PS5
-+/* HDR10 that amdgpu turns into 12 bpc YCbCr 4:2:2 (1080p60 / 2160p60, FLAVA3) */
-+static bool ps5_hdr_deep_color(const struct drm_connector_state *state)
-+{
-+	const struct drm_crtc_state *crtc_state;
-+	const struct hdr_output_metadata *md;
-+	u8 vic;
++	/*
++	 * PS5: RGB at 8 bpc is the only colour depth the HDMI bridges take, so
++	 * that's all the property offers (desktops then don't list 10 bit).
++	 */
++	if (!aconnector->mst_root)
++		drm_connector_attach_max_bpc_property(&aconnector->base, 8, 8);
 +
-+	if (!isHdmiHdrSupported() || !state->crtc || !state->state ||
-+	    !state->hdr_output_metadata ||
-+	    state->hdr_output_metadata->length < sizeof(*md))
-+		return false;
-+	if (state->colorspace != DRM_MODE_COLORIMETRY_BT2020_RGB &&
-+	    state->colorspace != DRM_MODE_COLORIMETRY_BT2020_YCC)
-+		return false;
-+	md = state->hdr_output_metadata->data;
-+	if (md->hdmi_metadata_type1.eotf != HDMI_EOTF_SMPTE_ST2084)
-+		return false;
-+	if (!(state->connector->display_info.color_formats &
-+	      BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR422)))
-+		return false;
-+	crtc_state = drm_atomic_get_new_crtc_state(state->state, state->crtc);
-+	if (!crtc_state)
-+		return false;
-+	vic = drm_match_cea_mode(&crtc_state->mode);
-+	return vic == 16 || vic == 97;
-+}
++	aconnector->base.state->max_bpc = 8;
++#else
+ 	if (!aconnector->mst_root)
+ 		drm_connector_attach_max_bpc_property(&aconnector->base, 8, 16);
+ 
+ 	aconnector->base.state->max_bpc = 16;
 +#endif
-+
- static int drm_atomic_connector_check(struct drm_connector *connector,
- 		struct drm_connector_state *state)
- {
-@@ -568,6 +600,16 @@ static int drm_atomic_connector_check(struct drm_connector *connector,
+ 	aconnector->base.state->max_requested_bpc = aconnector->base.state->max_bpc;
+ 
+ 	if (connector_type == DRM_MODE_CONNECTOR_HDMIA) {
+diff --git a/drivers/gpu/drm/drm_atomic.c b/drivers/gpu/drm/drm_atomic.c
+index e5c8ef06c..cc1e40b8a 100644
+--- a/drivers/gpu/drm/drm_atomic.c
++++ b/drivers/gpu/drm/drm_atomic.c
+@@ -568,6 +568,15 @@ static int drm_atomic_connector_check(struct drm_connector *connector,
  	struct drm_writeback_job *writeback_job = state->writeback_job;
  	const struct drm_display_info *info = &connector->display_info;
  
 +#ifdef CONFIG_X86_PS5
 +	/*
-+	 * The PS5's HDMI bridges take 8 bits per colour; deeper RGB comes out
-+	 * as posterized "rainbow" contours. Drivers default "max bpc" to 16 and
-+	 * compositors may ask for 10, so cap every commit at 8. The exception
-+	 * is HDR on FLAVA3, which amdgpu sends as 12 bpc YCbCr 4:2:2.
++	 * The PS5's HDMI bridges take RGB at 8 bits per colour; deeper RGB comes
++	 * out as posterized "rainbow" contours. Cap every commit at 8 (HDR on
++	 * FLAVA3 is sent as 12 bpc YCbCr 4:2:2 by amdgpu independently of this).
 +	 */
-+	if (state->max_requested_bpc > 8 && !ps5_hdr_deep_color(state))
++	if (state->max_requested_bpc > 8)
 +		state->max_requested_bpc = 8;
 +#endif
  	state->max_bpc = info->bpc ? info->bpc : 8;

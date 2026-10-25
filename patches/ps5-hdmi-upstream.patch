@@ -7,7 +7,8 @@ PS5 HDMI: ps5-linux-patches #49, #50 and #54, ported from 7.2 to 7.3
 #54 back off HDMI hotplug retries while DP link training keeps failing.
 plus [ps5-bazzite-deck]: RGB output stays at 8 bpc on the PS5 (the bridges
 show deeper RGB as posterized contours); the only deep-colour output is the
-HDR 4:2:2 above. Drop when meower carries these.
+HDR 4:2:2 above, which (unlike upstream) doesn't depend on the requested
+colour depth, since "max bpc" is 8 on the PS5. Drop when meower carries these.
 ---
 
 diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
@@ -141,10 +142,10 @@ index 884e7e4bb..1c7ebfdb2 100644
  void dm_ps5_hdmi_resetup_work_func(struct work_struct *work);
  #endif
 diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
-index 1a9d9fb41..b9cbf4da9 100644
+index 1a9d9fb41..6ddb9cfbc 100644
 --- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
 +++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
-@@ -872,6 +872,42 @@ STATIC_IFN_KUNIT bool adjust_colour_depth_from_display_info(
+@@ -872,6 +872,46 @@ STATIC_IFN_KUNIT bool adjust_colour_depth_from_display_info(
  }
  EXPORT_IF_KUNIT(adjust_colour_depth_from_display_info);
  
@@ -165,10 +166,14 @@ index 1a9d9fb41..b9cbf4da9 100644
 +	if (!state || !state->connector)
 +		return;
 +	info = &state->connector->display_info;
++	/*
++	 * Unlike upstream, independent of the requested colour depth: on the PS5
++	 * "max bpc" is 8 (the only RGB depth the bridges take), and HDR10 always
++	 * goes out as 12 bpc 4:2:2.
++	 */
 +	if (!isHdmiHdrSupported() || !state->hdr_output_metadata ||
 +	    !(info->color_formats & BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR422)) ||
-+	    timing->pixel_encoding != PIXEL_ENCODING_RGB ||
-+	    timing->display_color_depth < COLOR_DEPTH_121212)
++	    timing->pixel_encoding != PIXEL_ENCODING_RGB)
 +		return;
 +	if (state->colorspace != DRM_MODE_COLORIMETRY_BT2020_RGB &&
 +	    state->colorspace != DRM_MODE_COLORIMETRY_BT2020_YCC)
@@ -187,7 +192,7 @@ index 1a9d9fb41..b9cbf4da9 100644
  STATIC_IFN_KUNIT void fill_stream_properties_from_drm_display_mode(
  	struct dc_stream_state *stream,
  	const struct drm_display_mode *mode_in,
-@@ -982,6 +1018,18 @@ STATIC_IFN_KUNIT void fill_stream_properties_from_drm_display_mode(
+@@ -982,6 +1022,18 @@ STATIC_IFN_KUNIT void fill_stream_properties_from_drm_display_mode(
  	if (is_hdmi_ep)
  		adjust_colour_depth_from_display_info(timing_out, info);
  
@@ -206,7 +211,7 @@ index 1a9d9fb41..b9cbf4da9 100644
  	stream->output_color_space = amdgpu_dm_get_output_color_space(timing_out, connector_state);
  	stream->content_type = get_output_content_type(connector_state);
  }
-@@ -3645,7 +3693,9 @@ void dm_ps5_hdmi_resetup_work_func(struct work_struct *work)
+@@ -3645,7 +3697,9 @@ void dm_ps5_hdmi_resetup_work_func(struct work_struct *work)
  			continue;
  
  		acrtc = to_amdgpu_crtc(connector->encoder->crtc);

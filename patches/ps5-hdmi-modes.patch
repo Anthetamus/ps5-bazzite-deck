@@ -13,10 +13,10 @@ PS5 HDMI resolutions                                      [ps5-bazzite-deck]
 ---
 
 diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
-index b9cbf4da9..5eaa347b4 100644
+index d0f0c0c28..569003a81 100644
 --- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
 +++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
-@@ -1606,6 +1606,10 @@ create_stream_for_sink(struct drm_connector *connector,
+@@ -1610,6 +1610,10 @@ create_stream_for_sink(struct drm_connector *connector,
  	if (recalculate_timing)
  		drm_mode_set_crtcinfo(&saved_mode, 0);
  
@@ -27,7 +27,7 @@ index b9cbf4da9..5eaa347b4 100644
  	/*
  	 * If scaling is enabled and refresh rate didn't change
  	 * we copy the vic and polarities of the old timings
-@@ -2549,6 +2553,16 @@ enum drm_mode_status amdgpu_dm_connector_mode_valid(struct drm_connector *connec
+@@ -2553,6 +2557,16 @@ enum drm_mode_status amdgpu_dm_connector_mode_valid(struct drm_connector *connec
  #ifdef CONFIG_X86_PS5
  	if (!isHdmiModeValid(mode, amdgpu_force_1080p))
  		return MODE_ERROR;
@@ -44,7 +44,7 @@ index b9cbf4da9..5eaa347b4 100644
  #endif
  
  	if ((mode->flags & DRM_MODE_FLAG_INTERLACE) ||
-@@ -3194,6 +3208,9 @@ static int amdgpu_dm_connector_get_modes(struct drm_connector *connector)
+@@ -3198,6 +3212,9 @@ static int amdgpu_dm_connector_get_modes(struct drm_connector *connector)
  		}
  	} else {
  		amdgpu_dm_connector_ddc_get_modes(connector, drm_edid);
