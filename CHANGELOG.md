@@ -4,7 +4,7 @@ All notable changes to the images. Exact upstream versions are in each release's
 
 ## [Unreleased]
 
-## [v1.3.0] – 2026-10-<DD>
+## [v1.3.0] – 2026-10-25
 - Based on rmux's current `meower` (baee34d): includes the IW620 Bluetooth fixes (our quirks-table and L2CAP fixes, now upstream, plus Maitreya25's interface-recipient control requests: controller initialization and power-on). Our Bluetooth patch is down to the MediaTek part
 - **HDR** (ps5-linux-patches #49, ported to 7.3): HDR10 at 1080p60 and 4K60, sent as 12-bit YCbCr 4:2:2, on consoles whose HDMI chip supports it. Unlike upstream it doesn't depend on the requested colour depth. RGB output stays at 8 bits on every console
 - **Standard display modes**: 1080p60, 1080p120, 1440p60, 4K60 and 1440p120 (where the HDMI chip supports it) in their standard timings, offered whenever the display's limits allow them, even if its EDID doesn't list them. **New displays start at 1080p60**; a higher mode picked in Game Mode or the desktop is remembered, no `cmdline.txt` change needed
