@@ -4,7 +4,8 @@ Turn your PS5 into a Steam console: this is [Bazzite](https://bazzite.gg) in Ste
 PlayStation 5. It boots straight into **Steam Gaming Mode** (the Steam Deck interface), and a full KDE
 desktop is one click away.
 
-It runs from a USB drive, through the [PS5 Linux loader](https://github.com/rmuxwashere/ps5-linux-loader/releases).
+It runs from a USB drive, started by **rmux's** [PS5 Linux loader](https://github.com/rmuxwashere/ps5-linux-loader/releases). There are several Linux loaders for the PS5;
+use rmux's.
 Your PS5 itself is not modified: unplug the drive and it's a normal PS5 again.
 
 **Download:** [Releases](../../releases) · **Help & testing:** [Discord](https://discord.gg/qGcuTgBBYU)
@@ -20,7 +21,7 @@ Your PS5 itself is not modified: unplug the drive and it's a normal PS5 again.
 ## What you need
 
 - Any PS5 model **except the PS5 Pro** (not supported), on a firmware the loader supports: see the
-  [PS5 Linux loader releases](https://github.com/rmuxwashere/ps5-linux-loader/releases). Tested on firmware 13.60.
+  releases of **rmux's** [PS5 Linux loader](https://github.com/rmuxwashere/ps5-linux-loader/releases). Tested on firmware 13.60.
 - A USB drive of **32 GB or more**, ideally an external SSD (much faster than a stick).
 - A PC to download and flash the image.
 - Optional but handy for the first setup: a USB keyboard.
@@ -89,19 +90,28 @@ All steps run on the PS5, booted from the USB, in a terminal (password `ps5`).
    sudo mkdir -p /boot/efi && sudo mount LABEL=boot /boot/efi
    cd ~/ps5-linux-tools && sudo ./m2_install.sh --install /path/to/ps5-bazzite-deck.img
    ```
-   Use the extracted `.img`, not the `.7z` files.
+   - Use the extracted `.img`, not the `.7z` files.
+   - Keep the `.img` **on the USB system** (e.g. in `~/Downloads`), **not on the M.2**: the M.2 is wiped during the install.
+   - Tip: type the command up to `--install ` (with the space), then drag the `.img` from the file manager into the
+     terminal to insert its path.
 
 3. **Boot from the M.2 from now on:** point `cmdline.txt` at the M.2:
    ```
    sudo sed -i 's/root=LABEL=bazzite-deck /root=LABEL=bazzite-deck-m2 /' /efi/cmdline.txt && sudo cat /efi/cmdline.txt
    ```
 
-4. **Start it:** `cd ~/ps5-linux-tools && sudo ./m2_exec.sh` switches to the M.2 system right away, or just reboot and
-   run the loader as usual.
+4. **Start it:** reboot (`sudo reboot`) and run the loader as usual; it now starts the system on the M.2.
+   (Optional: `cd ~/ps5-linux-tools && sudo ./m2_exec.sh` switches right away without a reboot. If it says `kexec`
+   isn't found, just reboot instead.)
 
 To go back to the USB system, change `bazzite-deck-m2` back to `bazzite-deck` in `cmdline.txt`.
 
 Notes:
+- The first start from the M.2 can show a grey or black screen: reboot once and run the loader again.
+- **The USB drive afterwards:** keep its small FAT32 partition (label `boot`): the loader always starts Linux from
+  there, and updates put the new kernel there. The big Linux partition on the USB is only a fallback now. You can
+  reformat that one for storage (only that partition, not the whole drive), but then you can no longer switch back
+  to the USB system via `cmdline.txt`.
 - Updating: run the in-place update while booted from the M.2, with the USB drive plugged in. The update script
   finds the USB drive's boot partition by itself: on an M.2 install it is often mounted at `/boot/efi` instead of
   `/efi`, or not at all.
@@ -141,7 +151,7 @@ Check the settings from [PS5 settings](#ps5-settings-do-this-first): **HDMI Devi
 **Supply Power to USB Ports: Always**. A reset or a firmware update of the PS5 can change them back.
 
 ### 2. Linux loader
-Use the latest loader for your firmware from the [PS5 Linux loader releases](https://github.com/rmuxwashere/ps5-linux-loader/releases). An older loader, or one for a
+Use the latest loader for your firmware from **rmux's** [PS5 Linux loader releases](https://github.com/rmuxwashere/ps5-linux-loader/releases), not another loader. An older loader, or one for a
 different firmware, typically ends up back in the PS5 menu or with no white light at all.
 
 ### 3. Boot options (`cmdline.txt`)
@@ -150,12 +160,12 @@ end with a space in front of it, or delete it again to undo.
 
 | Option | What it does | When to use it |
 |---|---|---|
-| `amdgpu.force_1080p=1` | Only allows 1080p60 | Black or garbled picture you can't get past |
+| `amdgpu.force_1080p=1` | Only allows 1080p60 | Black or garbled picture you can't get past, e.g. after picking a resolution your display can't show (Game Mode and the desktop remember it). Remove it again once you've set a working resolution |
 | `hdmi.rearm=0` | Turns off the "picture comes back when the TV wakes up" fix | The picture flickers or goes black right after appearing, e.g. after re-plugging HDMI |
 | `hdmi.log_notify=1` | Logs every report from the HDMI chip and every picture setup | When asked for logs about a black screen |
 | `amdgpu.ps5_cu_unlock=3` | Uses all 40 GPU compute units instead of 36. **Opt-in**, see [40 GPU compute units](#40-gpu-compute-units-optional) | You want more GPU power and your console's extra units work |
-| `systemd.wants=sshd.service` | Starts SSH at boot | Only v1.0.6 and older; SSH is on by default from v1.0.7 |
-| `lsm=landlock,lockdown,yama,integrity,apparmor,bpf` | Needed for Game Mode | **Don't remove** (Game Mode falls back to the desktop without it) |
+
+Leave the entries that are already in `cmdline.txt` as they are, especially `lsm=…` (Game Mode needs it).
 
 ### Common problems
 
