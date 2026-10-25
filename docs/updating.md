@@ -8,18 +8,18 @@ settings stay. Reflashing always works too.
 
 | You have | Update to | How |
 |---|---|---|
-| v1.0.3 – v1.1.1 | **v1.2.0** | the update bundle (below) |
+| v1.0.3 – v1.2.0 | **v1.3.0** | the update bundle (below) |
 | v1.0.4 and only want v1.0.5 | v1.0.5 | the one-line boot fix (v1.0.5 release notes) |
 | v1.0.2 | v1.0.3 | `btusb.ko` (v1.0.3 release notes) |
 | older, or not sure | latest | reflash |
 
 `uname -r` must print `7.3.0`; the update script checks this and stops otherwise.
 
-## The update bundle (to v1.2.0)
+## The update bundle (to v1.3.0)
 
 On the PS5 (in a terminal or over SSH, password `ps5`), with a network connection:
 ```
-cd ~ && curl -LO https://github.com/VivaLaVent/ps5-bazzite-deck/releases/download/v1.2.0/ps5-bazzite-deck-v1.2.0-update.tar.xz && curl -LO https://github.com/VivaLaVent/ps5-bazzite-deck/releases/download/v1.2.0/ps5-bazzite-deck-v1.2.0-update.tar.xz.sha256 && sha256sum -c ps5-bazzite-deck-v1.2.0-update.tar.xz.sha256 && tar xJf ps5-bazzite-deck-v1.2.0-update.tar.xz && bash ps5-bazzite-deck-v1.2.0-update/update.sh
+cd ~ && curl -LO https://github.com/VivaLaVent/ps5-bazzite-deck/releases/download/v1.3.0/ps5-bazzite-deck-v1.3.0-update.tar.xz && curl -LO https://github.com/VivaLaVent/ps5-bazzite-deck/releases/download/v1.3.0/ps5-bazzite-deck-v1.3.0-update.tar.xz.sha256 && sha256sum -c ps5-bazzite-deck-v1.3.0-update.tar.xz.sha256 && tar xJf ps5-bazzite-deck-v1.3.0-update.tar.xz && bash ps5-bazzite-deck-v1.3.0-update/update.sh
 ```
 Then reboot and run the loader as usual.
 

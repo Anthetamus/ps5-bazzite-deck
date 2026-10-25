@@ -60,7 +60,8 @@ If you reset the PS5 settings, set these again.
 
 - The default password is **`ps5`** (asked for anything that needs admin rights). SSH is on from v1.0.7:
   `ssh ps5@<your PS5's IP>`. **Change the password** with `passwd`, since anyone on your network can try `ps5`.
-- **Important:** turn **HDR off** and set **RGB range** to **Full**, in both Gaming Mode and desktop mode.
+- **Important:** set **RGB range** to **Full**, in both Gaming Mode and desktop mode.
+- The first start is at **1080p60**. Pick your resolution in the display settings (Game Mode: Settings → Display); it's remembered.
 - Connect to Wi-Fi during the setup. If Wi-Fi doesn't work after that, **reboot once**.
 
 ## Updating
@@ -151,6 +152,7 @@ end with a space in front of it, or delete it again to undo.
 |---|---|---|
 | `amdgpu.force_1080p=1` | Only allows 1080p60 | Black or garbled picture you can't get past |
 | `hdmi.rearm=0` | Turns off the "picture comes back when the TV wakes up" fix | The picture flickers or goes black right after appearing, e.g. after re-plugging HDMI |
+| `hdmi.log_notify=1` | Logs every report from the HDMI chip and every picture setup | When asked for logs about a black screen |
 | `amdgpu.ps5_cu_unlock=3` | Uses all 40 GPU compute units instead of 36. **Opt-in**, see [40 GPU compute units](#40-gpu-compute-units-optional) | You want more GPU power and your console's extra units work |
 | `systemd.wants=sshd.service` | Starts SSH at boot | Only v1.0.6 and older; SSH is on by default from v1.0.7 |
 | `lsm=landlock,lockdown,yama,integrity,apparmor,bpf` | Needed for Game Mode | **Don't remove** (Game Mode falls back to the desktop without it) |
@@ -176,6 +178,12 @@ keeps the picture) and run, then reboot:
 sudo mkdir -p /etc/systemd/system/ps5-stage-firmware.service.d && printf '[Unit]\nDefaultDependencies=no\nConflicts=shutdown.target\nBefore=shutdown.target\n' | sudo tee /etc/systemd/system/ps5-stage-firmware.service.d/10-no-default-deps.conf >/dev/null && sudo systemctl daemon-reload && sudo reboot
 ```
 
+**Display or HDMI problems**: run this on the PS5 (terminal or SSH) while the problem is visible, and send the
+file it names in [Discord](https://discord.gg/f8QARgNkf5):
+```
+curl -fsSL https://raw.githubusercontent.com/VivaLaVent/ps5-bazzite-deck/main/tools/diag.sh | bash
+```
+
 **Sending logs** (we can't help without them): in a terminal run
 `journalctl -b --no-pager > /tmp/log.txt; sudo cp /tmp/log.txt /efi/`, shut down, plug the drive into your PC
 and send `log.txt` from the small FAT32 partition in [Discord](https://discord.gg/f8QARgNkf5).
@@ -184,8 +192,8 @@ and send `log.txt` from the small FAT32 partition in [Discord](https://discord.g
 
 - **Does this touch my PS5's games or system?** No. Everything is on the USB drive.
 - **Can I dual-boot?** No. You run the jailbreak + loader each time you want Linux.
-- **120 Hz?** 1080p120 works if your TV/monitor offers it. 1440p120 is on by default from v1.1 if your TV/monitor offers it, and 1440p60 is offered too.
-- **HDR?** Not working yet. Keep it off (see First boot).
+- **Which resolutions?** 1080p60, 1080p120, 1440p60, 1440p120 and 4K60, whenever your TV/monitor can do them. Other resolutions and refresh rates aren't possible through the PS5's HDMI chip.
+- **HDR?** Works on most consoles at 1080p60 and 4K60 (Game Mode → Settings → Display). If the picture looks wrong with HDR on, your console doesn't support it: switch it off.
 - **"Your PS5 wasn't turned off properly" after using Linux?** Normal and harmless.
 - **Can I install apps?** Yes: use the Discover store / Flatpak. `dnf5 install` works for system packages;
   `rpm-ostree` and `ujust update` don't (this image isn't an ostree install).
