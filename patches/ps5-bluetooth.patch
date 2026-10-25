@@ -1,17 +1,12 @@
-PS5 Bluetooth fixes (all models)
+PS5 Bluetooth: MediaTek 0e8d:3603 (Slim)                [WizGery/ps5-mediatek-fixes 0003]
 
-1. NXP IW620 (fat, 1286:2059): the PS5 entry must be in btusb's quirks_table,
-   not btusb_table, or its quirks never apply (two hci devices, init failures);
-   the interface-0 check moves after the quirks lookup.        [ps5-bazzite-deck]
-2. MediaTek 0e8d:3603 (Slim): the chip only drains ACL data from the second
-   bulk OUT endpoint (0x02). Module parameter btusb.ps5_tx_ep.
-                         [WizGery/ps5-mediatek-fixes 0003, ported to 7.3]
-3. L2CAP: defer the security check while encryption is still pending, instead
-   of refusing the connection (controllers that connect and drop right away).
-                                    [WizGery/ps5-mediatek-fixes 0004]
+The chip only drains ACL data from the second bulk OUT endpoint (0x02).
+Module parameter btusb.ps5_tx_ep. (The IW620 quirks-table fix and the L2CAP
+encryption-pending fix are upstream in meower since baee34d.)
+---
 
 diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index 21baba310..45a44c13a 100644
+index 6ebd5b7bc..0491971fd 100644
 --- a/drivers/bluetooth/btusb.c
 +++ b/drivers/bluetooth/btusb.c
 @@ -34,6 +34,7 @@
@@ -22,63 +17,7 @@ index 21baba310..45a44c13a 100644
  static bool enable_poll_sync = IS_ENABLED(CONFIG_BT_HCIBTUSB_POLL_SYNC);
  static bool reset = true;
  
-@@ -187,14 +188,6 @@ static const struct usb_device_id btusb_table[] = {
- 	{ USB_DEVICE(0x8087, 0x0a5a),
- 	  .driver_info = BTUSB_INTEL_BOOT | BTUSB_BROKEN_ISOC },
- 
--       /* PS5 IW620 Bluetooth device */
--	{ USB_DEVICE(0x1286, 0x2059),
--	  .driver_info = BTUSB_MARVELL |
--			 BTUSB_IFNUM_0 |
--			 BTUSB_BROKEN_LE_DEFAULT_PHY |
--			 BTUSB_BROKEN_READ_LOCAL_NAME |
--			 BTUSB_NO_AUTOSUSPEND },
--
- 	{ }	/* Terminating entry */
- };
- 
-@@ -498,6 +491,17 @@ static const struct usb_device_id quirks_table[] = {
- 	{ USB_DEVICE(0x1286, 0x2046), .driver_info = BTUSB_MARVELL },
- 	{ USB_DEVICE(0x1286, 0x204e), .driver_info = BTUSB_MARVELL },
- 
-+	/* PS5 IW620 Bluetooth (Marvell-lineage). The device reports the
-+	 * generic Bluetooth class, so it matches btusb_table first and the
-+	 * quirks only take effect from quirks_table.
-+	 */
-+	{ USB_DEVICE(0x1286, 0x2059),
-+	  .driver_info = BTUSB_MARVELL |
-+			 BTUSB_IFNUM_0 |
-+			 BTUSB_BROKEN_LE_DEFAULT_PHY |
-+			 BTUSB_BROKEN_READ_LOCAL_NAME |
-+			 BTUSB_NO_AUTOSUSPEND },
-+
- 	/*
- 	 * NXP IW610 BT interfaces (Marvell-lineage silicon, same quirk as
- 	 * the 0x1286 entries above). Scoped to the BT interface class,
-@@ -4211,10 +4215,6 @@ static int btusb_probe(struct usb_interface *intf,
- 	    (intf->cur_altsetting->desc.bInterfaceNumber != 2))
- 		return -ENODEV;
- 
--	if ((id->driver_info & BTUSB_IFNUM_0) &&
--		intf->cur_altsetting->desc.bInterfaceNumber != 0)
--		return -ENODEV;
--
- 	ifnum_base = intf->cur_altsetting->desc.bInterfaceNumber;
- 
- 	if (!id->driver_info) {
-@@ -4225,6 +4225,11 @@ static int btusb_probe(struct usb_interface *intf,
- 			id = match;
- 	}
- 
-+	/* PS5 IW620: only interface 0 is the HCI transport */
-+	if ((id->driver_info & BTUSB_IFNUM_0) &&
-+	    intf->cur_altsetting->desc.bInterfaceNumber != 0)
-+		return -ENODEV;
-+
- 	if (id->driver_info & BTUSB_IGNORE)
- 		return -ENODEV;
- 
-@@ -4249,6 +4254,27 @@ static int btusb_probe(struct usb_interface *intf,
+@@ -4266,6 +4267,27 @@ static int btusb_probe(struct usb_interface *intf,
  	if (err)
  		goto err_free_data;
  
@@ -106,7 +45,7 @@ index 21baba310..45a44c13a 100644
  	if (id->driver_info & BTUSB_AMP) {
  		data->cmdreq_type = USB_TYPE_CLASS | 0x01;
  		data->cmdreq = 0x2b;
-@@ -4877,6 +4903,9 @@ MODULE_PARM_DESC(force_scofix, "Force fixup of wrong SCO buffers size");
+@@ -4897,6 +4919,9 @@ MODULE_PARM_DESC(force_scofix, "Force fixup of wrong SCO buffers size");
  module_param(enable_autosuspend, bool, 0644);
  MODULE_PARM_DESC(enable_autosuspend, "Enable USB autosuspend by default");
  
@@ -116,31 +55,3 @@ index 21baba310..45a44c13a 100644
  module_param(reset, bool, 0644);
  MODULE_PARM_DESC(reset, "Send HCI reset command on initialization");
  
-diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
-index aaa2a1cd4..68796c028 100644
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@ -4125,8 +4125,22 @@ static void l2cap_connect(struct l2cap_conn *conn, struct l2cap_cmd_hdr *cmd,
- 
- 	l2cap_chan_lock(pchan);
- 
--	/* Check if the ACL is secure enough (if not SDP) */
-+	/* Check if the ACL is secure enough (if not SDP).
-+	 *
-+	 * Some controllers (PS5 MediaTek 0e8d:3603) deliver the remote's
-+	 * L2CAP Connection Request on the bulk endpoint before the Encryption
-+	 * Change event arrives on the interrupt endpoint. If a link key has
-+	 * already been handed over, encryption is on its way: answer
-+	 * "pending" and let l2cap_security_cfm() finish (or block) the
-+	 * channel once the link is actually encrypted.
-+	 */
- 	if (psm != cpu_to_le16(L2CAP_PSM_SDP) &&
-+	    !test_bit(HCI_CONN_ENCRYPT, &conn->hcon->flags) &&
-+	    conn->hcon->key_type != 0xff &&
-+	    (conn->info_state & L2CAP_INFO_FEAT_MASK_REQ_DONE)) {
-+		BT_DBG("conn %p encryption pending, deferring psm 0x%2.2x",
-+		       conn, __le16_to_cpu(psm));
-+	} else if (psm != cpu_to_le16(L2CAP_PSM_SDP) &&
- 	    (!hci_conn_check_link_mode(conn->hcon) ||
- 	    !l2cap_check_enc_key_size(conn->hcon, pchan))) {
- 		conn->disc_reason = HCI_ERROR_AUTH_FAILURE;

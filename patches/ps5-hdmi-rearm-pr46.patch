@@ -2,12 +2,12 @@ PS5 HDMI: re-arm the output after the same display re-announces itself
 (display already on at boot, woken from standby, power-cycled).
 
 ps5-linux-patches PR #46 by rdmrocha, merged by hand onto #43 (hotplug).
-Kept as its own patch so it can be dropped once it is merged upstream.
 Module parameters: hdmi.rearm, hdmi.rearm_settle_ms, hdmi.rearm_max,
 hdmi.rearm_window_s, hdmi.rearm_trigger (write-only, re-arms now).
+---
 
 diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
-index f2d72308b..33120dafa 100644
+index 0a82e8201..ca87027a3 100644
 --- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
 +++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
 @@ -811,6 +811,11 @@ static int amdgpu_dm_init(struct amdgpu_device *adev)
@@ -34,10 +34,10 @@ index f2d72308b..33120dafa 100644
  		destroy_workqueue(adev->dm.vblank_control_workqueue);
  		adev->dm.vblank_control_workqueue = NULL;
 diff --git a/drivers/ps5/hdmi.c b/drivers/ps5/hdmi.c
-index a4ace5c3b..7efe015b9 100644
+index a5b526fec..134d686af 100644
 --- a/drivers/ps5/hdmi.c
 +++ b/drivers/ps5/hdmi.c
-@@ -6,6 +6,17 @@
+@@ -7,6 +7,17 @@
  #include <linux/mutex.h>
  #include <linux/ps5.h>
  #include <drm/drm_edid.h>
@@ -55,7 +55,7 @@ index a4ace5c3b..7efe015b9 100644
  
  #define HDMI_IC_TYPE_FLAVA3	2
  #define HDMI_IC_TYPE_VERDE	3
-@@ -1252,6 +1263,203 @@ void hdmi_set_hotplug_handler(void (*handler)(void *data), void *data)
+@@ -1315,6 +1326,203 @@ void hdmi_set_hotplug_handler(void (*handler)(void *data), void *data)
  }
  EXPORT_SYMBOL(hdmi_set_hotplug_handler);
  
@@ -259,7 +259,7 @@ index a4ace5c3b..7efe015b9 100644
  void hdmi_notification_handler(struct icc_msg *msg)
  {
  		if (msg->data[1] == 0x02) {
-@@ -1260,10 +1468,22 @@ void hdmi_notification_handler(struct icc_msg *msg)
+@@ -1323,10 +1531,22 @@ void hdmi_notification_handler(struct icc_msg *msg)
  			pr_info("got real edid\n");
  			sceHdmiOutputMode();
  
@@ -283,12 +283,12 @@ index a4ace5c3b..7efe015b9 100644
  }
  EXPORT_SYMBOL(hdmi_notification_handler);
 diff --git a/include/linux/ps5.h b/include/linux/ps5.h
-index cdc32417c..29feaf869 100644
+index 39910b5e0..da3def19f 100644
 --- a/include/linux/ps5.h
 +++ b/include/linux/ps5.h
-@@ -66,6 +66,10 @@ int getHdmiConfiguration(void);
- u32 getHdmiDpAudioN(u32 default_n);
+@@ -70,6 +70,10 @@ u32 getHdmiDpAudioN(u32 default_n);
  bool isHdmiModeValid(const struct drm_display_mode *mode, int force_1080p);
+ bool isHdmiHdrSupported(void);
  
 +struct drm_device;
 +void ps5_hdmi_register_drm(struct drm_device *dev);

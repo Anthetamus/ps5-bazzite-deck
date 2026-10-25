@@ -57,10 +57,12 @@ sed -i 's/^# CONFIG_MODULE_ALLOW_BTF_MISMATCH is not set/CONFIG_MODULE_ALLOW_BTF
 sed -i 's/^# CONFIG_MT7921E is not set/CONFIG_MT7921E=m/' work/ps5-linux-patches/.config; grep -q '^CONFIG_MT7921E=m' work/ps5-linux-patches/.config || echo 'CONFIG_MT7921E=m' >> work/ps5-linux-patches/.config   # MediaTek MT7921 Wi-Fi (PS5 Slim)
 git clone -q --branch "$KERNEL_TAG" --depth 1 https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git work/linux73
 git -C work/linux73 apply --exclude=Makefile ../ps5-linux-patches/linux.patch
-git -C work/linux73 apply "$SRC/patches/ps5-bluetooth.patch"          # Bluetooth: IW620 quirks table, MediaTek bulk-OUT endpoint, L2CAP defer security
+git -C work/linux73 apply "$SRC/patches/ps5-bluetooth.patch"          # MediaTek bulk-OUT endpoint (IW620 + L2CAP fixes are in meower)
+git -C work/linux73 apply "$SRC/patches/ps5-hdmi-upstream.patch"      # ps5-linux-patches #49 HDR (FLAVA3), #50 SCDC, #54 hotplug back-off, ported to 7.3
 git -C work/linux73 apply "$SRC/patches/ps5-hdmi-rearm-pr46.patch"     # picture back when the same display wakes up (upstream PR #46)
-git -C work/linux73 apply "$SRC/patches/ps5-hdmi-output-fixes.patch"   # FLAVA3 scrambling off below 340 MHz, no FLAVA3 event sequences, hotplug work queue
-git -C work/linux73 apply "$SRC/patches/ps5-hdmi-modes.patch"          # 1440p120, 1440p60, 1440p sync fixup, skip 4:2:0-only modes
+git -C work/linux73 apply "$SRC/patches/ps5-hdmi-output-fixes.patch"   # no FLAVA3 event sequences, re-arm same display only, 8-bit cap (HDR exception)
+git -C work/linux73 apply "$SRC/patches/ps5-hdmi-modes.patch"          # standard modes within the display limits, 1080p60 preferred, 1440p sync safety net, no 4:2:0-only
+git -C work/linux73 apply "$SRC/patches/ps5-hdmi-log-notify.patch"     # hdmi.log_notify=1: log bridge notifications and picture setups
 cp work/ps5-linux-patches/.config work/linux73/.config
 cp -r work/ps5-linux-patches work/linux73/ps5-linux-patches
 grep -E '^CONFIG_LSM=|^CONFIG_DEBUG_INFO_BTF=|^CONFIG_MT7921E=|^CONFIG_MODULE_ALLOW_BTF_MISMATCH=' work/linux73/.config
@@ -107,7 +109,7 @@ cat > output/VERSIONS.md << V
 | NXP mwifiex base driver | \`lf-6.18.2_1.0.0\` |
 | IW620 firmware | not in the image; pcieuartiw620_combo_v1.bin is staged at boot from the loader's boot partition (ps5-stage-firmware) |
 | Kernel config changes | CONFIG_LSM += bpf, CONFIG_DEBUG_INFO_BTF=y, CONFIG_MT7921E=m, CONFIG_MODULE_ALLOW_BTF_MISMATCH=y |
-| Extra kernel patches | ps5-bluetooth, ps5-hdmi-rearm-pr46, ps5-hdmi-output-fixes, ps5-hdmi-modes (patches/) |
+| Extra kernel patches | ps5-bluetooth, ps5-hdmi-upstream, ps5-hdmi-rearm-pr46, ps5-hdmi-output-fixes, ps5-hdmi-modes, ps5-hdmi-log-notify (patches/) |
 | Image config | NetworkManager stable MAC (IW620), MediaTek BT udev + modprobe, ps5-stage-firmware boot-cycle drop-in (files/), SSH enabled |
 | cmdline.txt | $(sed 's/__DISTRO__/bazzite-deck/' boot/cmdline.txt) |
 V

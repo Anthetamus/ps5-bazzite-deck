@@ -1,25 +1,22 @@
 PS5 HDMI resolutions                                      [ps5-bazzite-deck]
 
-1. 1440p120 (497.75 MHz) is allowed on FLAVA3; the bridge gets the same
-   high-bandwidth setup as 4K60 (TMDS 1/40 clock ratio, scrambling).
-2. FLAVA3: when the sink lists 1440p but not at 60 Hz, add the standard
-   1440p60 timing (VESA DMT reduced blanking, 241.5 MHz).
-3. FLAVA3: the bridge places a 1440p picture 112 px after the rising edge of
-   hsync and 33 lines after vsync (the standard 1440p60 timing). Give hsync the
-   standard shape (32 px pulse, 80 px back porch) and positive polarity, and
-   move vsync so its back porch is 33 lines. Fixes pictures shifted right
-   (desktop CVT 1440p60), down (TVs' 1440p120) or 32 px left (standard timing
-   with negative hsync, e.g. Elgato 4K X). Active area, totals and pixel clock
-   are unchanged.
-4. Skip modes the sink accepts only as YCbCr 4:2:0: the bridge always sends
-   them labelled as RGB (half-width, discoloured picture). The next mode,
-   usually 1080p, is used instead.
+1. The modes the bridge has a setup for, in their standard timings: 1080p60,
+   1080p120, 2160p60 (CEA VICs 16/63/97), 1440p60 (VESA DMT) and on FLAVA3
+   1440p120 (CVT-RB, high-bandwidth setup like 2160p60). Offered whenever the
+   sink's limits allow them (highest refresh, max TMDS clock, a listed mode
+   at that size or above), also when its EDID doesn't list them; the sink's
+   own 1440p variants are dropped. 1080p60 is marked preferred, so a new
+   display starts there; compositors remember a higher mode once picked.
+2. FLAVA3 1440p sync safety net: standard hsync shape and positive polarity,
+   vsync back porch 33 lines, for any other 1440p timing.
+3. Skip modes the sink accepts only as YCbCr 4:2:0 (sent labelled as RGB).
+---
 
 diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
-index 1a9d9fb41..910d450e4 100644
+index b9cbf4da9..5eaa347b4 100644
 --- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
 +++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
-@@ -1558,6 +1558,10 @@ create_stream_for_sink(struct drm_connector *connector,
+@@ -1606,6 +1606,10 @@ create_stream_for_sink(struct drm_connector *connector,
  	if (recalculate_timing)
  		drm_mode_set_crtcinfo(&saved_mode, 0);
  
@@ -30,7 +27,7 @@ index 1a9d9fb41..910d450e4 100644
  	/*
  	 * If scaling is enabled and refresh rate didn't change
  	 * we copy the vic and polarities of the old timings
-@@ -2501,6 +2505,16 @@ enum drm_mode_status amdgpu_dm_connector_mode_valid(struct drm_connector *connec
+@@ -2549,6 +2553,16 @@ enum drm_mode_status amdgpu_dm_connector_mode_valid(struct drm_connector *connec
  #ifdef CONFIG_X86_PS5
  	if (!isHdmiModeValid(mode, amdgpu_force_1080p))
  		return MODE_ERROR;
@@ -47,7 +44,7 @@ index 1a9d9fb41..910d450e4 100644
  #endif
  
  	if ((mode->flags & DRM_MODE_FLAG_INTERLACE) ||
-@@ -3146,6 +3160,9 @@ static int amdgpu_dm_connector_get_modes(struct drm_connector *connector)
+@@ -3194,6 +3208,9 @@ static int amdgpu_dm_connector_get_modes(struct drm_connector *connector)
  		}
  	} else {
  		amdgpu_dm_connector_ddc_get_modes(connector, drm_edid);
@@ -58,28 +55,29 @@ index 1a9d9fb41..910d450e4 100644
  			amdgpu_dm_connector_add_common_modes(encoder, connector);
  		amdgpu_dm_connector_add_freesync_modes(connector, drm_edid);
 diff --git a/drivers/ps5/hdmi.c b/drivers/ps5/hdmi.c
-index a1befe533..5ef0123e2 100644
+index a1304ad48..6b6c3e3a3 100644
 --- a/drivers/ps5/hdmi.c
 +++ b/drivers/ps5/hdmi.c
-@@ -3,6 +3,8 @@
+@@ -3,6 +3,9 @@
  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
  
  #include <linux/crc32.h>
-+#include <drm/drm_modes.h>
 +#include <drm/drm_connector.h>
++#include <drm/drm_edid.h>
++#include <drm/drm_modes.h>
+ #include <linux/hdmi.h>
  #include <linux/module.h>
  #include <linux/mutex.h>
- #include <linux/ps5.h>
-@@ -776,6 +778,8 @@ static void mask_7203(void)
+@@ -780,6 +783,8 @@ static void mask_7203(void)
  	i2c_exec();
  }
  
 +static bool hdmi_mode_is_hi_rate(const struct drm_display_mode *mode);
 +
- static void setHdmiBasicVideoConfigFlava3(const struct drm_display_mode *mode)
+ static void setHdmiBasicVideoConfigFlava3(const struct drm_display_mode *mode,
+ 					  unsigned int bpc, bool yuv422)
  {
- 	u8 vic = drm_match_cea_mode(mode);
-@@ -822,7 +826,7 @@ static void setHdmiBasicVideoConfigFlava3(const struct drm_display_mode *mode)
+@@ -833,7 +838,7 @@ static void setHdmiBasicVideoConfigFlava3(const struct drm_display_mode *mode,
  	}
  	i2c_write(0x10e7, 0xff);
  	i2c_write(0x7202, 0x20);
@@ -88,7 +86,7 @@ index a1befe533..5ef0123e2 100644
  		i2c_write(0x7072, 0x01);
  		i2c_write(0x7074, 0x07);
  		i2c_write(0x7206, 0x80);
-@@ -858,7 +862,7 @@ static void setVideoAdditionalConfigFlava3(const struct drm_display_mode *mode)
+@@ -867,7 +872,7 @@ static void setVideoAdditionalConfigFlava3(const struct drm_display_mode *mode)
  	i2c_waitclear(0x7204, 0x40);
  	i2c_delay(10);
  	i2c_begin_block();
@@ -97,29 +95,28 @@ index a1befe533..5ef0123e2 100644
  		i2c_write(0x7019, 0x01);
  	} else {
  		i2c_write(0x7019, 0x00);
-@@ -874,7 +878,7 @@ static void setVideoAdditionalConfigFlava3(const struct drm_display_mode *mode)
+@@ -883,15 +888,16 @@ static void setVideoAdditionalConfigFlava3(const struct drm_display_mode *mode)
  	i2c_waitclear(0x7a84, 0x01);
  	i2c_begin_block();
  	i2c_write(0x7a8b, 0x05);
--	if (vic == 97) {
-+	if (vic == 97 || hdmi_mode_is_hi_rate(mode)) {
- 		/* SCDC (DDC 0x54) TMDS_Config = scrambling + 1/40 clock ratio */
- 		i2c_write(0x7c00, 0x03);
- 		i2c_write_data(0x7a80, (u8[]){0xa8, 0x20, 0x00, 0x80}, 4);
-@@ -889,10 +893,10 @@ static void setVideoAdditionalConfigFlava3(const struct drm_display_mode *mode)
+-	if (vic == 97 || scrambling) {
+-		i2c_write(0x7c00, vic == 97 ? 0x03 : 0x00);
++	if (vic == 97 || hdmi_mode_is_hi_rate(mode) || scrambling) {
++		/* SCDC TMDS_Config: scrambling + 1/40 clock ratio above 340 MHz */
++		i2c_write(0x7c00, (vic == 97 || hdmi_mode_is_hi_rate(mode)) ? 0x03 : 0x00);
  		i2c_write_data(0x7a80, (u8[]){0xa8, 0x20, 0x00, 0x80}, 4);
  	}
  	i2c_end_block();
--	if (vic == 97 || flava3_scrambling) {
-+	if (vic == 97 || hdmi_mode_is_hi_rate(mode) || flava3_scrambling) {
+-	if (vic == 97 || scrambling) {
++	if (vic == 97 || hdmi_mode_is_hi_rate(mode) || scrambling) {
  		i2c_waitclear(0x7a84, 0x01);
  	}
--	flava3_scrambling = (vic == 97);
-+	flava3_scrambling = (vic == 97 || hdmi_mode_is_hi_rate(mode));
+-	scrambling = vic == 97;
++	scrambling = vic == 97 || hdmi_mode_is_hi_rate(mode);
  	i2c_begin_block();
  	i2c_write(0x7021, 0xff);
  	i2c_write(0x700a, 0x02);
-@@ -1232,6 +1236,17 @@ u32 getHdmiDpAudioN(u32 default_n)
+@@ -1276,6 +1282,17 @@ u32 getHdmiDpAudioN(u32 default_n)
  }
  EXPORT_SYMBOL(getHdmiDpAudioN);
  
@@ -137,24 +134,37 @@ index a1befe533..5ef0123e2 100644
  bool isHdmiModeValid(const struct drm_display_mode *mode, int force_1080p)
  {
  	u8 vic = drm_match_cea_mode(mode);
-@@ -1241,6 +1256,8 @@ bool isHdmiModeValid(const struct drm_display_mode *mode, int force_1080p)
+@@ -1283,9 +1300,14 @@ bool isHdmiModeValid(const struct drm_display_mode *mode, int force_1080p)
+ 	if (force_1080p)
+ 		return vic == 16; /* 1080p60 */
  
- 	/* 1440p */
+-	/* 1440p */
++	/* 1440p: only the standard timings the bridge's 1440p setup is made for */
  	if (mode->hdisplay == 2560 && mode->vdisplay == 1440) {
-+		if (hdmi_ic_type == HDMI_IC_TYPE_FLAVA3 && mode->clock == 497750)
-+			return true;
- 		return mode->clock == 241500 || mode->clock == 241700;
+-		return mode->clock == 241500 || mode->clock == 241700;
++		if (mode->htotal != 2720)
++			return false;
++		if ((mode->clock == 241500 || mode->clock == 241700) && mode->vtotal == 1481)
++			return true;	/* 1440p60, VESA DMT reduced blanking */
++		return hdmi_ic_type == HDMI_IC_TYPE_FLAVA3 &&
++		       mode->clock == 497750 && mode->vtotal == 1525;	/* 1440p120, CVT-RB */
  	}
  
-@@ -1255,6 +1272,109 @@ bool isHdmiModeValid(const struct drm_display_mode *mode, int force_1080p)
+ 	switch (vic) {
+@@ -1299,6 +1321,157 @@ bool isHdmiModeValid(const struct drm_display_mode *mode, int force_1080p)
  }
  EXPORT_SYMBOL(isHdmiModeValid);
  
 +/*
-+ * Many TVs list 1440p only at 120 Hz. On FLAVA3, add the standard 1440p60
-+ * timing (VESA DMT 2560x1440@60 reduced blanking, 241.5 MHz) when the sink
-+ * offers 1440p but not at 60 Hz: it is the timing the bridge's 1440p setup is
-+ * made for (back porches 80 px / 33 lines, so nothing to move).
++ * The modes the HDMI bridge has a setup for, in their standard timings:
++ * 1080p60 (VIC 16), 1080p120 (VIC 63), 2160p60 (VIC 97), 1440p60 (VESA DMT
++ * reduced blanking) and, on FLAVA3, 1440p120 (CVT-RB). The sink's own
++ * variants of 1440p are dropped by isHdmiModeValid(); the standard ones are
++ * offered whenever the sink's limits allow them, also when its EDID doesn't
++ * list them: its highest refresh rate (range descriptor or any listed mode),
++ * its max TMDS clock, and for 1440p/2160p a listed mode at that size or above.
++ * 1080p60 is marked preferred, so a new display starts there; compositors
++ * remember a higher mode once it is picked.
 + */
 +static const struct drm_display_mode ps5_1440p60 = {
 +	DRM_MODE("2560x1440", DRM_MODE_TYPE_DRIVER, 241500,
@@ -162,30 +172,77 @@ index a1befe533..5ef0123e2 100644
 +		 DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_NVSYNC)
 +};
 +
-+int ps5_hdmi_add_modes(struct drm_connector *connector)
++static const struct drm_display_mode ps5_1440p120 = {
++	DRM_MODE("2560x1440", DRM_MODE_TYPE_DRIVER, 497750,
++		 2560, 2608, 2640, 2720, 0, 1440, 1443, 1448, 1525, 0,
++		 DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_NVSYNC)
++};
++
++static bool ps5_has_mode(struct drm_connector *connector, const struct drm_display_mode *want)
 +{
-+	struct drm_display_mode *m, *mode;
-+	bool has_1440 = false;
++	struct drm_display_mode *m;
 +
-+	if (hdmi_ic_type != HDMI_IC_TYPE_FLAVA3)
-+		return 0;
++	list_for_each_entry(m, &connector->probed_modes, head)
++		if (drm_mode_match(m, want, DRM_MODE_MATCH_TIMINGS | DRM_MODE_MATCH_CLOCK))
++			return true;
++	return false;
++}
 +
-+	list_for_each_entry(m, &connector->probed_modes, head) {
-+		if (m->hdisplay != 2560 || m->vdisplay != 1440)
-+			continue;
-+		if (m->clock == 241500 || m->clock == 241700)
-+			return 0;	/* the sink already offers 1440p60 */
-+		has_1440 = true;
-+	}
-+	if (!has_1440)
-+		return 0;
-+
-+	mode = drm_mode_duplicate(connector->dev, &ps5_1440p60);
++static int ps5_add_mode(struct drm_connector *connector, struct drm_display_mode *mode)
++{
 +	if (!mode)
 +		return 0;
++	if (ps5_has_mode(connector, mode)) {
++		drm_mode_destroy(connector->dev, mode);
++		return 0;
++	}
++	mode->type = DRM_MODE_TYPE_DRIVER;
 +	drm_mode_probed_add(connector, mode);
-+	pr_info_once("added 2560x1440@60 (sink lists 1440p only at other rates)\n");
 +	return 1;
++}
++
++int ps5_hdmi_add_modes(struct drm_connector *connector)
++{
++	struct drm_device *dev = connector->dev;
++	const struct drm_display_info *info = &connector->display_info;
++	int tmds = info->max_tmds_clock ? info->max_tmds_clock : 340000;
++	int max_hz = info->monitor_range.max_vfreq;
++	bool has_1440 = false, has_2160 = false;
++	struct drm_display_mode *m;
++	int added = 0;
++
++	if (list_empty(&connector->probed_modes))
++		return 0;	/* no EDID */
++
++	list_for_each_entry(m, &connector->probed_modes, head) {
++		max_hz = max(max_hz, drm_mode_vrefresh(m));
++		if (m->vdisplay >= 1440 && m->hdisplay >= 2560)
++			has_1440 = true;
++		if (m->vdisplay >= 2160 && m->hdisplay >= 3840)
++			has_2160 = true;
++		m->type &= ~DRM_MODE_TYPE_PREFERRED;
++	}
++
++	added += ps5_add_mode(connector, drm_display_mode_from_cea_vic(dev, 16));
++	if (max_hz >= 119 && tmds >= 297000)
++		added += ps5_add_mode(connector, drm_display_mode_from_cea_vic(dev, 63));
++	if (has_2160 && tmds >= 594000)
++		added += ps5_add_mode(connector, drm_display_mode_from_cea_vic(dev, 97));
++	if (has_1440 && tmds >= 241500)
++		added += ps5_add_mode(connector, drm_mode_duplicate(dev, &ps5_1440p60));
++	if (hdmi_ic_type == HDMI_IC_TYPE_FLAVA3 && has_1440 && max_hz >= 119 &&
++	    tmds >= 497750)
++		added += ps5_add_mode(connector, drm_mode_duplicate(dev, &ps5_1440p120));
++
++	list_for_each_entry(m, &connector->probed_modes, head) {
++		if (drm_match_cea_mode(m) == 16) {
++			m->type |= DRM_MODE_TYPE_PREFERRED;
++			break;
++		}
++	}
++	pr_info("modes: standard set added %d (max %d Hz, TMDS %d MHz, 1440p %d, 2160p %d), 1080p60 preferred\n",
++		added, max_hz, tmds / 1000, has_1440, has_2160);
++	return added;
 +}
 +EXPORT_SYMBOL(ps5_hdmi_add_modes);
 +
@@ -194,12 +251,8 @@ index a1befe533..5ef0123e2 100644
 + * standard 2560x1440@60 (VESA DMT / CVT-RB): horizontally it starts the
 + * picture 112 px after the rising edge of hsync (32 px pulse + 80 px back
 + * porch, positive polarity), vertically 33 lines after the vsync pulse.
-+ * Other 1440p timings end up shifted: a desktop-generated CVT 1440p60 (long
-+ * blanking) to the right, a TV's 1440p120 (long vertical back porch) down,
-+ * and the standard timing with negative hsync (e.g. Elgato 4K X) 32 px to the
-+ * left, because there the rising edge is the end of the pulse.
-+ * So give hsync the standard shape and polarity, and move vsync so its back
-+ * porch matches. Active area, totals and pixel clock are unchanged.
++ * The standard timings offered above already have that shape; this is the
++ * safety net for any other 1440p timing (e.g. a desktop-generated mode).
 + */
 +#define PS5_FLAVA3_1440P_HSW	32
 +#define PS5_FLAVA3_1440P_HBP	80
@@ -253,17 +306,17 @@ index a1befe533..5ef0123e2 100644
 +}
 +EXPORT_SYMBOL(ps5_hdmi_fixup_timing);
 +
- const struct drm_edid *real_edid = NULL;
- 
- static void fix_edid(u8 *edid)
+ bool isHdmiHdrSupported(void)
+ {
+ 	return hdmi_ic_type == HDMI_IC_TYPE_FLAVA3;
 diff --git a/include/linux/ps5.h b/include/linux/ps5.h
-index 29feaf869..544962a29 100644
+index da3def19f..34d528913 100644
 --- a/include/linux/ps5.h
 +++ b/include/linux/ps5.h
-@@ -65,6 +65,9 @@ void sceHdmiOutputMode(void);
- int getHdmiConfiguration(void);
+@@ -69,6 +69,9 @@ int getHdmiConfiguration(void);
  u32 getHdmiDpAudioN(u32 default_n);
  bool isHdmiModeValid(const struct drm_display_mode *mode, int force_1080p);
+ bool isHdmiHdrSupported(void);
 +void ps5_hdmi_fixup_timing(struct drm_display_mode *mode);
 +struct drm_connector;
 +int ps5_hdmi_add_modes(struct drm_connector *connector);
