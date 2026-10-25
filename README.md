@@ -8,7 +8,7 @@ It runs from a USB drive, started by **rmux's** [PS5 Linux loader](https://githu
 use rmux's.
 Your PS5 itself is not modified: unplug the drive and it's a normal PS5 again.
 
-**Download:** [Releases](../../releases) · **Help & testing:** [Discord](https://discord.gg/qGcuTgBBYU)
+**Download:** [Releases](../../releases) · **Help & testing:** [Discord](https://discord.gg/qGcuTgBBYU) · **Support the project:** [Ko-fi](https://ko-fi.com/vivalavent)
 
 ## What works
 
@@ -207,6 +207,11 @@ and send `log.txt` from the small FAT32 partition in [Discord](https://discord.g
 - **"Your PS5 wasn't turned off properly" after using Linux?** Normal and harmless.
 - **Can I install apps?** Yes: use the Discover store / Flatpak. `dnf5 install` works for system packages;
   `rpm-ostree` and `ujust update` don't (this image isn't an ostree install).
+
+## Support the project
+
+This is a hobby project, built and tested in my free time. If it's useful to you, you can support it on
+[Ko-fi](https://ko-fi.com/vivalavent). Thank you!
 
 ## Credits
 

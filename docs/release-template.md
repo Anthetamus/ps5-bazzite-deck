@@ -32,3 +32,4 @@
 
 ---
 Questions, bug reports, test results: **Discord https://discord.gg/qGcuTgBBYU**
+Like the project? Support it on **Ko-fi https://ko-fi.com/vivalavent**

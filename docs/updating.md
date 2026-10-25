@@ -44,4 +44,4 @@ sudo mkdir -p /etc/systemd/system/ps5-stage-firmware.service.d && printf '[Unit]
 cd ~ && curl -LO https://github.com/VivaLaVent/ps5-bazzite-deck/releases/download/v1.0.3/btusb.ko && sudo cp btusb.ko /usr/lib/modules/$(uname -r)/kernel/drivers/bluetooth/btusb.ko && sudo depmod -a && sudo reboot
 ```
 
-Problems: [Discord](https://discord.gg/qGcuTgBBYU)
+Problems: [Discord](https://discord.gg/qGcuTgBBYU) · Support the project: [Ko-fi](https://ko-fi.com/vivalavent)

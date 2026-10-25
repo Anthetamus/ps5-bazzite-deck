@@ -14,6 +14,7 @@ import json, os, re, subprocess, sys, tempfile
 REPO = "VivaLaVent/ps5-bazzite-deck"
 TAGS = ["v1.0.3", "v1.0.4", "v1.0.5", "v1.0.6", "v1.0.7", "v1.1.0", "v1.1.1", "v1.2.0", "v1.3.0"]
 DISCORD = "https://discord.gg/qGcuTgBBYU"
+KOFI = "https://ko-fi.com/vivalavent"
 SRC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = "/tmp/release-notes"
 
@@ -80,7 +81,7 @@ def render(tag, tmp):
 """
     parts = ["## What's new\n" + section(per, "What's new") + "\n", upd + "\n", SETTINGS, install,
              "## Known issues\n" + "\n".join(f"- {i}" for i in COMMON_ISSUES + issues) + "\n",
-             versions, files_section(tag, assets), f"---\nQuestions, bug reports, test results: **Discord {DISCORD}**\n"]
+             versions, files_section(tag, assets), f"---\nQuestions, bug reports, test results: **Discord {DISCORD}**\nLike the project? Support it on **Ko-fi {KOFI}**\n"]
     return "\n".join(p for p in parts if p)
 
 
