@@ -3,7 +3,7 @@ and every picture setup with timestamps, for black-screen reports.
 ---
 
 diff --git a/drivers/ps5/hdmi.c b/drivers/ps5/hdmi.c
-index 6b6c3e3a3..8a5f3effd 100644
+index 858c203d7..fb0580f54 100644
 --- a/drivers/ps5/hdmi.c
 +++ b/drivers/ps5/hdmi.c
 @@ -128,6 +128,14 @@ static bool scrambling;
@@ -32,7 +32,7 @@ index 6b6c3e3a3..8a5f3effd 100644
  	if (hdmi_ic_type == HDMI_IC_TYPE_FLAVA3) {
  		setHdmiVideoConfigFlava3(mode, bpc, yuv422);
  	} else {
-@@ -1710,6 +1722,9 @@ void hdmi_notification_handler(struct icc_msg *msg)
+@@ -1716,6 +1728,9 @@ void hdmi_notification_handler(struct icc_msg *msg)
  	u32 crc;
  	bool other;
  

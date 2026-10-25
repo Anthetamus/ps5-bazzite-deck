@@ -7,8 +7,10 @@ PS5 HDMI resolutions                                      [ps5-bazzite-deck]
    at that size or above), also when its EDID doesn't list them; the sink's
    own 1440p variants are dropped. 1080p60 is marked preferred, so a new
    display starts there; compositors remember a higher mode once picked.
-2. FLAVA3 1440p sync safety net: standard hsync shape and positive polarity,
-   vsync back porch 33 lines, for any other 1440p timing.
+2. FLAVA3 1440p sync safety net: both syncs get the standard shape and
+   polarity of 2560x1440@60 (+hsync 32 px / 80 px back porch, -vsync with a
+   33-line back porch); the bridge moves the picture by the pulse width when
+   a polarity differs (-hsync: 32 px left, +vsync: 5 lines up).
 3. Skip modes the sink accepts only as YCbCr 4:2:0 (sent labelled as RGB).
 ---
 
@@ -55,7 +57,7 @@ index d0f0c0c28..569003a81 100644
  			amdgpu_dm_connector_add_common_modes(encoder, connector);
  		amdgpu_dm_connector_add_freesync_modes(connector, drm_edid);
 diff --git a/drivers/ps5/hdmi.c b/drivers/ps5/hdmi.c
-index a1304ad48..6b6c3e3a3 100644
+index a1304ad48..858c203d7 100644
 --- a/drivers/ps5/hdmi.c
 +++ b/drivers/ps5/hdmi.c
 @@ -3,6 +3,9 @@
@@ -151,7 +153,7 @@ index a1304ad48..6b6c3e3a3 100644
  	}
  
  	switch (vic) {
-@@ -1299,6 +1321,157 @@ bool isHdmiModeValid(const struct drm_display_mode *mode, int force_1080p)
+@@ -1299,6 +1321,163 @@ bool isHdmiModeValid(const struct drm_display_mode *mode, int force_1080p)
  }
  EXPORT_SYMBOL(isHdmiModeValid);
  
@@ -248,11 +250,13 @@ index a1304ad48..6b6c3e3a3 100644
 +
 +/*
 + * FLAVA3 places a 1440p picture as if the signal had the timing of the
-+ * standard 2560x1440@60 (VESA DMT / CVT-RB): horizontally it starts the
-+ * picture 112 px after the rising edge of hsync (32 px pulse + 80 px back
-+ * porch, positive polarity), vertically 33 lines after the vsync pulse.
-+ * The standard timings offered above already have that shape; this is the
-+ * safety net for any other 1440p timing (e.g. a desktop-generated mode).
++ * standard 2560x1440@60 (VESA DMT / CVT-RB, +hsync -vsync): horizontally it
++ * starts the picture 112 px after the rising edge of hsync (32 px pulse +
++ * 80 px back porch), vertically 33 lines after the vsync pulse. A sync with
++ * the other polarity moves the picture by the pulse width: -hsync 32 px to
++ * the left (Elgato 4K X), +vsync 5 lines up (LG TVs' 1440p120). So give both
++ * syncs the standard shape and polarity. The standard timings offered above
++ * already have it; this is the safety net for the sink's and desktop modes.
 + */
 +#define PS5_FLAVA3_1440P_HSW	32
 +#define PS5_FLAVA3_1440P_HBP	80
@@ -292,6 +296,10 @@ index a1304ad48..6b6c3e3a3 100644
 +		     &m->crtc_vsync_start, &m->crtc_vsync_end);
 +	if (m->flags & DRM_MODE_FLAG_NHSYNC) {
 +		m->flags = (m->flags & ~DRM_MODE_FLAG_NHSYNC) | DRM_MODE_FLAG_PHSYNC;
++		pol = true;
++	}
++	if (m->flags & DRM_MODE_FLAG_PVSYNC) {
++		m->flags = (m->flags & ~DRM_MODE_FLAG_PVSYNC) | DRM_MODE_FLAG_NVSYNC;
 +		pol = true;
 +	}
 +	if ((h || v || pol) &&

@@ -4,6 +4,12 @@ All notable changes to the images. Exact upstream versions are in each release's
 
 ## [Unreleased]
 
+## [v1.3.1] – 2026-10-25
+- **Fix: 1440p picture a few lines too high** with displays whose 1440p timing uses positive vsync (e.g. LG TVs at 1440p120): the HDMI chip expects the standard polarity of both syncs (+hsync, -vsync) and moves the picture by the pulse width otherwise. 1440p timings now get the standard vertical polarity too (horizontal since v1.2.0)
+- Same drivers (modules) as v1.3.0; the change is built into the kernel
+- Updating: `tools/update-latest.sh`, one command that always installs the latest release (`bash <(curl -fsSL …/tools/update-latest.sh)`); generic `docs/updating.md`
+- README: Ko-fi link, simpler boot-options table, clearer M.2 steps, rmux's loader named
+
 ## [v1.3.0] – 2026-10-25
 - Based on rmux's current `meower` (baee34d): includes the IW620 Bluetooth fixes (our quirks-table and L2CAP fixes, now upstream, plus Maitreya25's interface-recipient control requests: controller initialization and power-on). Our Bluetooth patch is down to the MediaTek part
 - **HDR** (ps5-linux-patches #49, ported to 7.3): HDR10 at 1080p60 and 4K60, sent as 12-bit YCbCr 4:2:2, on consoles whose HDMI chip supports it. Unlike upstream it doesn't depend on the requested colour depth. RGB output stays at 8 bits on every console
