@@ -167,6 +167,8 @@ end with a space in front of it, or delete it again to undo.
 | `amdgpu.force_1080p=1` | Only allows 1080p60 | Black or garbled picture you can't get past, e.g. after picking a resolution your display can't show (Game Mode and the desktop remember it). Remove it again once you've set a working resolution |
 | `hdmi.rearm=0` | Turns off the "picture comes back when the TV wakes up" fix | The picture flickers or goes black right after appearing, e.g. after re-plugging HDMI |
 | `hdmi.log_notify=1` | Logs every report from the HDMI chip and every picture setup | When asked for logs about a black screen |
+| `usbcore.autosuspend=-1` | USB devices never go to sleep | The USB drive/SSD disconnects, the system freezes, or there are I/O errors |
+| `usb-storage.quirks=xxxx:yyyy:u` | Turns off UAS for one USB drive (replace `xxxx:yyyy` with its ID from `lsusb`) | Same, with USB-C SSDs or enclosures: many have buggy UAS (resets, I/O errors, freezes) |
 | `amdgpu.ps5_cu_unlock=3` | Uses all 40 GPU compute units instead of 36. **Opt-in**, see [40 GPU compute units](#40-gpu-compute-units-optional) | You want more GPU power and your console's extra units work |
 
 Leave the entries that are already in `cmdline.txt` as they are, especially `lsm=…` (Game Mode needs it).
@@ -179,6 +181,13 @@ Leave the entries that are already in `cmdline.txt` as they are, especially `lsm
 - Try another TV/monitor or HDMI port, and try HDCP on and off in the PS5 settings.
 - Last resort: on the USB drive's small FAT32 partition, open `cmdline.txt` and add `amdgpu.force_1080p=1`
   at the end of the line.
+
+**Black screen, but the PS5 is running** (sound works, or SSH works): with a USB keyboard press
+<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F2</kbd>, wait 2–3 seconds, then <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F1</kbd>: that sets the
+picture up again. Switching the TV input away and back can also help. Over SSH: `sudo chvt 2; sleep 3; sudo chvt 1`.
+
+**Controller connects once, then doesn't reconnect by itself**: fixed in v1.4 (the Bluetooth adapter now accepts
+incoming connections). On older versions: `sudo btmgmt connectable on` (until the next reboot).
 
 **Games crash, freeze, or show green dots, artifacts or a purple tint**: if you switched on the 40-CU unlock,
 switch it off again (see [40 GPU compute units](#40-gpu-compute-units-optional)) and reboot.
@@ -206,7 +215,11 @@ and send `log.txt` from the small FAT32 partition in [Discord](https://discord.g
 
 - **One DualSense for the PS5 and Linux?** Yes, if the DualSense has pairing profiles (PS + a face button).
   Keep the PS5 pairing on one profile, and pair Linux on a different profile, for example PS + Square. You
-  don't need a USB cable when you switch systems. Original PS5 only. See [docs/dualsense-profiles.md](docs/dualsense-profiles.md).
+  don't need a USB cable when you switch systems. Original PS5 only, from v1.4. See [docs/dualsense-profiles.md](docs/dualsense-profiles.md).
+- **DualSense over Bluetooth:** the speaker and headphone jack only work over USB. Don't plug in the USB cable while
+  it's connected over Bluetooth; disconnect Bluetooth first.
+- **Video:** the PS5's GPU has no AV1 decoder. For YouTube in a browser, an extension like enhanced-h264ify gives
+  hardware-decoded H.264 instead.
 
 - **Does this touch my PS5's games or system?** No. Everything is on the USB drive.
 - **Can I dual-boot?** No. You run the jailbreak + loader each time you want Linux.
