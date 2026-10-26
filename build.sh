@@ -107,6 +107,8 @@ sudo install -Dm644 "$SRC/files/ps5-hidp.conf" "$ROOT/etc/modules-load.d/ps5-hid
 sudo bash "$SRC/tools/bt-mainconf.sh" "$ROOT/etc/bluetooth/main.conf"                                         # DualSense pairing: JustWorksRepairing = always, PairableTimeout = 0
 sudo install -Dm755 "$SRC/files/ps5-kexec" "$ROOT/usr/local/sbin/ps5-kexec"                                   # warm reboot into Linux (kexec_file_load, no kexec-tools needed)
 sudo install -Dm755 "$SRC/files/ps5-reboot-to-ps5" "$ROOT/usr/local/sbin/ps5-reboot-to-ps5"                     # ...and the way back to the PS5 system
+sudo install -Dm755 "$SRC/files/ps5-warm-reboot" "$ROOT/usr/local/sbin/ps5-warm-reboot"                       # warm reboot: off by default, "ps5-warm-reboot on"
+sudo install -Dm644 "$SRC/files/99-ps5-usb-power.rules" "$ROOT/etc/udev/rules.d/99-ps5-usb-power.rules"       # Bluetooth chips + Salina xHCI: no runtime suspend
 sudo install -Dm644 "$SRC/files/ps5-kexec-prepare.service" "$ROOT/etc/systemd/system/ps5-kexec-prepare.service" # loads the kernel when a reboot starts
 sudo install -Dm644 "$SRC/files/ps5-reboot.service" "$ROOT/etc/systemd/system/ps5-reboot.service"               # reboot = kexec when loaded, else normal
 sudo install -Dm644 "$SRC/files/reboot.target" "$ROOT/etc/systemd/system/reboot.target"                         # overrides systemd's reboot.target

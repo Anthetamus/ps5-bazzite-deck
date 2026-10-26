@@ -239,17 +239,15 @@ and send `log.txt` from the small FAT32 partition in [Discord](https://discord.g
 - **TV remote (HDMI CEC):** from v1.4, the TV remote's arrows, OK and back work in Game Mode and on the desktop,
   and at boot the PS5 turns the TV on and switches it to its input. To stop the latter, add
   ` ps5-cec.one_touch_play=0` to `cmdline.txt`. Thanks to Slip (ps5-linux-patches #53).
-- **Restart:** from v1.4, a restart (Steam's Restart, the desktop's Restart, `sudo reboot`) goes **straight back into
-  Linux** in about 20 seconds, without the PS5 system and the loader. To get back to the PS5 system, run
-  `ps5-reboot-to-ps5` (terminal or SSH) or just power off. If a warm restart ever ends on a black screen, hold the
-  power button to turn the PS5 off and run the loader; `sudo systemctl mask ps5-kexec-prepare` turns warm restarts off
-  (`unmask` turns them back on).
+- **Restart straight back into Linux (optional):** from v1.4, `ps5-warm-reboot on` makes every restart (Steam's,
+  the desktop's, `sudo reboot`) go straight back into Linux in about 20 seconds, without the PS5 system and the
+  loader; `ps5-warm-reboot off` turns it off again. Off by default: on some consoles the Wi-Fi/Bluetooth chip
+  doesn't come back after a warm restart. If that happens to you, power off and run the loader.
 - **Sleep:** from v1.4, a short press of the power button (or Steam's Sleep) puts the PS5 to sleep: screen off,
   orange light, the game paused. A short press wakes it (one beep) and the game, network and Bluetooth continue.
   The GPU stays on, so it saves little power. Thanks to Dasloh (ps5-linux-patches PR #4).
-- **VRR?** Not possible. The PS5's HDMI chip locks the frame timing itself, so a variable refresh rate from the GPU
-  doesn't get through (tested in the v1.4 pre-releases: the picture shifts and blinks). It would need Sony's own chip
-  setup, which isn't known.
+- **VRR?** Not yet. The PS5's HDMI chip has its own VRR mode (found by hsgodd in the stock system), but TVs still
+  drop the signal with it; work continues in separate test builds.
 - **Which resolutions?** 1080p60, 1080p120, 1440p60, 1440p120 and 4K60, whenever your TV/monitor can do them. Other resolutions and refresh rates aren't possible through the PS5's HDMI chip.
 - **HDR?** Works on most consoles at 1080p60 and 4K60 (Game Mode → Settings → Display). If the picture looks wrong with HDR on, your console doesn't support it: switch it off.
 - **"Your PS5 wasn't turned off properly" after using Linux?** Normal and harmless.

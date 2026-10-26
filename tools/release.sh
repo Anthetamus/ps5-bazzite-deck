@@ -18,16 +18,21 @@ echo "free space: ${FREE}G"; [ "$FREE" -ge 60 ] || { echo "STOP: need at least 6
 
 echo "==> build image + update bundle ($V)"
 cd "$B"
-mkdir -p linux-bin-prev && mv linux-bin/*.rpm linux-bin-prev/ 2>/dev/null || true
+# old kernel packages aside (root-owned: sudo), or the builder reuses them instead of building
+sudo mkdir -p linux-bin-prev && (sudo mv linux-bin/*.rpm linux-bin-prev/ 2>/dev/null || true)
+[ "$(ls linux-bin/*.rpm 2>/dev/null | wc -l)" = 0 ] || { echo "STOP: old kernel packages still in linux-bin"; exit 1; }
 sudo rm -rf work/chroot
 ./build_image.sh --distro bazzite-deck --kernel "$PWD/work/linux73"
 printf 'set -euo pipefail\nSRC=%s\nRELEASE=%s\nREPO=%s\nKERNEL_TAG=v7.3\nPATCHES_BRANCH=meower\nBUILDER_COMMIT=52db0a4\nIMG=output/ps5-bazzite-deck.img\ncd "$REPO"\n' "$SRC" "$V" "$PWD" > /tmp/finish.sh
 sed -n '/==> 5\. post-build/,$p' "$SRC/build.sh" >> /tmp/finish.sh
+sudo -v
 SKIP_7Z=1 bash /tmp/finish.sh
+# release assets only: drop patch files left by earlier builds that are no longer in the repo
+for f in output/*.patch; do [ -f "$SRC/patches/$(basename "$f")" ] || rm -f "$f"; done
 BUNDLE=ps5-bazzite-deck-$V-update.tar.xz
 
 echo "==> install on the PS5 ($PS5)"
-scp "output/$BUNDLE" "$PS5:~" && ssh -t "$PS5" "rm -rf ps5-bazzite-deck-$V-update && tar xJf $BUNDLE && bash ps5-bazzite-deck-$V-update/update.sh && sudo reboot" || echo "(install on the PS5 failed or the PS5 is offline: install it yourself before answering)"
+scp "output/$BUNDLE" "$PS5:~" && ssh -t "$PS5" "rm -rf ps5-bazzite-deck-$V-update && tar xJf $BUNDLE && bash ps5-bazzite-deck-$V-update/update.sh && sudo systemctl reboot" || echo "(install on the PS5 failed or the PS5 is offline: install it yourself before answering)"
 echo
 read -r -p "Boot the PS5 with the loader and test it. Publish $V now? [y/N] " OK
 [ "$OK" = y ] || { echo "Not published. The bundle is in $B/output."; exit 0; }
