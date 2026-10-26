@@ -43,7 +43,9 @@ while read -r src dst mode; do [ -n "$src" ] && sudo install -Dm"${mode:-644}" "
 sudo systemctl daemon-reload
 sudo udevadm control --reload 2>/dev/null || true
 [ -e /usr/sbin/kexec ] || sudo install -Dm755 files/kexec-shim /usr/sbin/kexec   # systemd runs "kexec -e" for warm reboots
-for u in ps5-bt-addr ps5-bt-connectable ps5-bt-revive ps5-kexec-load; do
+# the first rc3 bundle had a warm-reboot unit that only worked after a boot: replace it
+if [ -e /etc/systemd/system/ps5-kexec-load.service ]; then sudo systemctl disable ps5-kexec-load.service 2>/dev/null; sudo rm -f /etc/systemd/system/ps5-kexec-load.service; sudo systemctl daemon-reload; fi
+for u in ps5-bt-addr ps5-bt-connectable ps5-bt-revive; do
   [ -f "/etc/systemd/system/$u.service" ] && sudo systemctl enable "$u.service" 2>/dev/null || true
 done
 sudo sed -i 's/ video=DP-1:1920x1080@60//' "$EFI/cmdline.txt"

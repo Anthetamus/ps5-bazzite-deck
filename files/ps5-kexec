@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 # Warm reboot into Linux: load the kernel from the boot partition with the kexec_file_load
-# system call (no kexec-tools needed), unload it, or execute it. Used by ps5-kexec-load.service
-# (loads at shutdown, so cmdline.txt and a freshly updated kernel are always current) and by
-# the /usr/sbin/kexec shim systemd runs at the end of a kexec reboot.
+# system call (no kexec-tools needed), unload it, or execute it. Used by ps5-kexec-prepare.service
+# (started by reboot.target, so cmdline.txt and a freshly updated kernel are always current) and
+# by the /usr/sbin/kexec shim systemd runs at the end of a kexec reboot.
 import ctypes, os, subprocess, sys
 
 SYS_kexec_file_load = 320          # x86_64
@@ -24,10 +24,6 @@ def boot_dir():
 def load():
     if os.path.exists("/run/ps5-reboot-to-ps5"):
         print("reboot to the PS5 system requested: not loading a kernel")
-        return 0
-    jobs = subprocess.run(["systemctl", "list-jobs", "--no-legend"], capture_output=True, text=True).stdout
-    if "reboot.target" not in jobs and "kexec.target" not in jobs:
-        print("not a reboot: nothing to load")
         return 0
     d, mounted = boot_dir()
     if not d:

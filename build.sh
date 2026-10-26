@@ -105,11 +105,10 @@ sudo install -Dm644 "$SRC/files/ps5-hidp.conf" "$ROOT/etc/modules-load.d/ps5-hid
 sudo bash "$SRC/tools/bt-mainconf.sh" "$ROOT/etc/bluetooth/main.conf"                                         # DualSense pairing: JustWorksRepairing = always, PairableTimeout = 0
 sudo install -Dm755 "$SRC/files/ps5-kexec" "$ROOT/usr/local/sbin/ps5-kexec"                                   # warm reboot into Linux (kexec_file_load, no kexec-tools needed)
 sudo install -Dm755 "$SRC/files/ps5-reboot-to-ps5" "$ROOT/usr/local/sbin/ps5-reboot-to-ps5"                     # ...and the way back to the PS5 system
-sudo install -Dm644 "$SRC/files/ps5-kexec-load.service" "$ROOT/etc/systemd/system/ps5-kexec-load.service"       # loads the kernel at shutdown
+sudo install -Dm644 "$SRC/files/ps5-kexec-prepare.service" "$ROOT/etc/systemd/system/ps5-kexec-prepare.service" # loads the kernel when a reboot starts
 sudo install -Dm644 "$SRC/files/ps5-reboot.service" "$ROOT/etc/systemd/system/ps5-reboot.service"               # reboot = kexec when loaded, else normal
 sudo install -Dm644 "$SRC/files/reboot.target" "$ROOT/etc/systemd/system/reboot.target"                         # overrides systemd's reboot.target
 [ -e "$ROOT/usr/sbin/kexec" ] || sudo install -Dm755 "$SRC/files/kexec-shim" "$ROOT/usr/sbin/kexec"            # systemd runs "kexec -e"; stand-in when kexec-tools is absent
-sudo ln -sf /etc/systemd/system/ps5-kexec-load.service "$ROOT/etc/systemd/system/multi-user.target.wants/ps5-kexec-load.service"
 sudo mkdir -p "$ROOT/etc/systemd/system/multi-user.target.wants" && sudo ln -sf /usr/lib/systemd/system/sshd.service "$ROOT/etc/systemd/system/multi-user.target.wants/sshd.service"   # SSH on by default
 echo "$RELEASE" | sudo tee "$ROOT/etc/ps5-bazzite-deck-version" >/dev/null
 sync

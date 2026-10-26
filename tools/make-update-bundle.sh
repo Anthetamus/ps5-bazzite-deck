@@ -22,7 +22,7 @@ for f in $(sudo ls /mnt/ps5boot); do case "$f" in bzImage|initrd*) sudo cp "/mnt
 sudo cp -a "/mnt/ps5root/usr/lib/modules/$K" "$OUT/modules/"
 sudo test -f /mnt/ps5root/etc/modprobe.d/ps5-iw620.conf && sudo cp /mnt/ps5root/etc/modprobe.d/ps5-iw620.conf "$OUT/files/ps5-iw620-modprobe.conf"
 sudo chown -R "$(id -u):$(id -g)" "$OUT"
-cp "$SRC/files/99-ps5-iw620.conf" "$SRC/files/99-ps5-bt-phantom.rules" "$SRC/files/btusb-ps5.conf" "$SRC/files/ps5-stage-firmware-no-default-deps.conf" "$SRC/files/ps5-bt-addr" "$SRC/files/ps5-bt-addr.service" "$SRC/files/ps5-bt-connectable.service" "$SRC/files/bluetooth-ps5-connectable.conf" "$SRC/files/99-ps5-bt-services.rules" "$SRC/files/ps5-bt-revive" "$SRC/files/ps5-bt-revive.service" "$SRC/files/ps5-hidp.conf" "$SRC/files/ps5-kexec" "$SRC/files/kexec-shim" "$SRC/files/ps5-kexec-load.service" "$SRC/files/ps5-reboot.service" "$SRC/files/reboot.target" "$SRC/files/ps5-reboot-to-ps5" "$OUT/files/"
+cp "$SRC/files/99-ps5-iw620.conf" "$SRC/files/99-ps5-bt-phantom.rules" "$SRC/files/btusb-ps5.conf" "$SRC/files/ps5-stage-firmware-no-default-deps.conf" "$SRC/files/ps5-bt-addr" "$SRC/files/ps5-bt-addr.service" "$SRC/files/ps5-bt-connectable.service" "$SRC/files/bluetooth-ps5-connectable.conf" "$SRC/files/99-ps5-bt-services.rules" "$SRC/files/ps5-bt-revive" "$SRC/files/ps5-bt-revive.service" "$SRC/files/ps5-hidp.conf" "$SRC/files/ps5-kexec" "$SRC/files/kexec-shim" "$SRC/files/ps5-kexec-prepare.service" "$SRC/files/ps5-reboot.service" "$SRC/files/reboot.target" "$SRC/files/ps5-reboot-to-ps5" "$OUT/files/"
 # FILES: source, destination, optional mode (default 644)
 cat > "$OUT/FILES" << 'L'
 99-ps5-iw620.conf /etc/NetworkManager/conf.d/99-ps5-iw620.conf
@@ -40,7 +40,7 @@ ps5-bt-revive.service /etc/systemd/system/ps5-bt-revive.service
 ps5-hidp.conf /etc/modules-load.d/ps5-hidp.conf
 ps5-kexec /usr/local/sbin/ps5-kexec 755
 ps5-reboot-to-ps5 /usr/local/sbin/ps5-reboot-to-ps5 755
-ps5-kexec-load.service /etc/systemd/system/ps5-kexec-load.service
+ps5-kexec-prepare.service /etc/systemd/system/ps5-kexec-prepare.service
 ps5-reboot.service /etc/systemd/system/ps5-reboot.service
 reboot.target /etc/systemd/system/reboot.target
 L
