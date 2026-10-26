@@ -1,0 +1,13 @@
+[Unit]
+Description=Warm reboot into Linux: load the kernel from the boot partition at shutdown
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/true
+# at shutdown, while the boot partition is still mounted: cmdline.txt and the kernel as they are now
+ExecStop=/usr/local/sbin/ps5-kexec load
+
+[Install]
+WantedBy=multi-user.target

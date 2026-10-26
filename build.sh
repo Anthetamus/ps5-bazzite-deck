@@ -50,6 +50,8 @@ cp "$SRC/patches/ps5-iw620-kernel73-compat.patch" extra-patches/
 echo "==> 3. kernel source: $KERNEL_TAG + $PATCHES_BRANCH patches"
 mkdir -p work
 git clone -q -b "$PATCHES_BRANCH" https://github.com/rmuxnet/ps5-linux-patches-1 work/ps5-linux-patches
+git -C work/ps5-linux-patches checkout -q baee34d                                                   # pinned: the commit the patches below were made against
+git -C work/ps5-linux-patches apply "$SRC/patches/ps5-linux-patches-pr4-s2idle.patch"              # suspend-to-idle (sleep), ps5-linux-patches PR #4 by Dasloh (.config + linux.patch)
 sed -i 's/^CONFIG_LSM=.*/CONFIG_LSM="landlock,lockdown,yama,integrity,apparmor,bpf"/' work/ps5-linux-patches/.config
 sed -i 's/^# CONFIG_DEBUG_INFO_BTF is not set/CONFIG_DEBUG_INFO_BTF=y/' work/ps5-linux-patches/.config
 grep -q '^CONFIG_DEBUG_INFO_BTF=y' work/ps5-linux-patches/.config || echo 'CONFIG_DEBUG_INFO_BTF=y' >> work/ps5-linux-patches/.config
@@ -101,6 +103,13 @@ sudo install -Dm644 "$SRC/files/ps5-bt-revive.service" "$ROOT/etc/systemd/system
 sudo mkdir -p "$ROOT/etc/systemd/system/multi-user.target.wants" && sudo ln -sf /etc/systemd/system/ps5-bt-revive.service "$ROOT/etc/systemd/system/multi-user.target.wants/ps5-bt-revive.service"
 sudo install -Dm644 "$SRC/files/ps5-hidp.conf" "$ROOT/etc/modules-load.d/ps5-hidp.conf"                        # load hidp at boot (first controller connection)
 sudo bash "$SRC/tools/bt-mainconf.sh" "$ROOT/etc/bluetooth/main.conf"                                         # DualSense pairing: JustWorksRepairing = always, PairableTimeout = 0
+sudo install -Dm755 "$SRC/files/ps5-kexec" "$ROOT/usr/local/sbin/ps5-kexec"                                   # warm reboot into Linux (kexec_file_load, no kexec-tools needed)
+sudo install -Dm755 "$SRC/files/ps5-reboot-to-ps5" "$ROOT/usr/local/sbin/ps5-reboot-to-ps5"                     # ...and the way back to the PS5 system
+sudo install -Dm644 "$SRC/files/ps5-kexec-load.service" "$ROOT/etc/systemd/system/ps5-kexec-load.service"       # loads the kernel at shutdown
+sudo install -Dm644 "$SRC/files/ps5-reboot.service" "$ROOT/etc/systemd/system/ps5-reboot.service"               # reboot = kexec when loaded, else normal
+sudo install -Dm644 "$SRC/files/reboot.target" "$ROOT/etc/systemd/system/reboot.target"                         # overrides systemd's reboot.target
+[ -e "$ROOT/usr/sbin/kexec" ] || sudo install -Dm755 "$SRC/files/kexec-shim" "$ROOT/usr/sbin/kexec"            # systemd runs "kexec -e"; stand-in when kexec-tools is absent
+sudo ln -sf /etc/systemd/system/ps5-kexec-load.service "$ROOT/etc/systemd/system/multi-user.target.wants/ps5-kexec-load.service"
 sudo mkdir -p "$ROOT/etc/systemd/system/multi-user.target.wants" && sudo ln -sf /usr/lib/systemd/system/sshd.service "$ROOT/etc/systemd/system/multi-user.target.wants/sshd.service"   # SSH on by default
 echo "$RELEASE" | sudo tee "$ROOT/etc/ps5-bazzite-deck-version" >/dev/null
 sync
@@ -117,14 +126,14 @@ cat > output/VERSIONS.md << V
 |---|---|
 | Bazzite Deck | \`ghcr.io/ublue-os/bazzite-deck:stable\` @ \`$BAZZITE_DIGEST\` |
 | Linux kernel | \`$KERNEL_TAG\` (kernel.org stable) |
-| PS5 kernel patches | rmuxnet/ps5-linux-patches-1 \`$PATCHES_BRANCH\` @ \`$(git -C work/ps5-linux-patches rev-parse --short HEAD)\` |
+| PS5 kernel patches | rmuxnet/ps5-linux-patches-1 \`$PATCHES_BRANCH\` @ \`$(git -C work/ps5-linux-patches rev-parse --short HEAD)\` + PR #4 (suspend-to-idle, Dasloh) |
 | Image builder | ps5-linux/ps5-linux-image @ \`$BUILDER_COMMIT\` + local-changes.diff |
 | IW620 Wi-Fi patches | ps5-linux/ps5-linux-mwifiex \`main\` @ \`$(git ls-remote https://github.com/ps5-linux/ps5-linux-mwifiex.git main | cut -c1-7)\` + patches/ps5-iw620-kernel73-compat.patch |
 | NXP mwifiex base driver | \`lf-6.18.2_1.0.0\` |
 | IW620 firmware | not in the image; pcieuartiw620_combo_v1.bin is staged at boot from the loader's boot partition (ps5-stage-firmware) |
 | Kernel config changes | CONFIG_LSM += bpf, CONFIG_DEBUG_INFO_BTF=y, CONFIG_MT7921E=m, CONFIG_MODULE_ALLOW_BTF_MISMATCH=y |
 | Extra kernel patches | ps5-bluetooth, ps5-hdmi-upstream, ps5-hdmi-rearm-pr46, ps5-hdmi-output-fixes, ps5-hdmi-modes, ps5-hdmi-debug-log, ps5-hdmi-link-lock, ps5-gpu-overlay, ps5-hdmi-vrr (patches/) |
-| Image config | NetworkManager stable MAC (IW620), MediaTek BT udev + modprobe, ps5-stage-firmware boot-cycle drop-in, IW620 Linux-only BT address (ps5-bt-addr), BT connectable, BT revive, hidp preload, BlueZ pairing options (files/, tools/bt-mainconf.sh), SSH enabled |
+| Image config | NetworkManager stable MAC (IW620), MediaTek BT udev + modprobe, ps5-stage-firmware boot-cycle drop-in, IW620 Linux-only BT address (ps5-bt-addr), BT connectable, BT revive, hidp preload, BlueZ pairing options, warm reboot into Linux (kexec) (files/, tools/bt-mainconf.sh), SSH enabled |
 | cmdline.txt | $(sed 's/__DISTRO__/bazzite-deck/' boot/cmdline.txt) |
 V
 cat output/VERSIONS.md

@@ -42,7 +42,8 @@ while read -r src dst mode; do [ -n "$src" ] && sudo install -Dm"${mode:-644}" "
 [ -f bt-mainconf.sh ] && sudo bash bt-mainconf.sh /etc/bluetooth/main.conf
 sudo systemctl daemon-reload
 sudo udevadm control --reload 2>/dev/null || true
-for u in ps5-bt-addr ps5-bt-connectable ps5-bt-revive; do
+[ -e /usr/sbin/kexec ] || sudo install -Dm755 files/kexec-shim /usr/sbin/kexec   # systemd runs "kexec -e" for warm reboots
+for u in ps5-bt-addr ps5-bt-connectable ps5-bt-revive ps5-kexec-load; do
   [ -f "/etc/systemd/system/$u.service" ] && sudo systemctl enable "$u.service" 2>/dev/null || true
 done
 sudo sed -i 's/ video=DP-1:1920x1080@60//' "$EFI/cmdline.txt"

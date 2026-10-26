@@ -235,6 +235,13 @@ and send `log.txt` from the small FAT32 partition in [Discord](https://discord.g
 
 - **Does this touch my PS5's games or system?** No. Everything is on the USB drive.
 - **Can I dual-boot?** No. You run the jailbreak + loader each time you want Linux.
+- **Restart:** from v1.4, a restart (Steam's Restart, the desktop's Restart, `sudo reboot`) goes **straight back into
+  Linux** in about 20 seconds, without the PS5 system and the loader. To get back to the PS5 system, run
+  `ps5-reboot-to-ps5` (terminal or SSH) or just power off. If a warm restart ever ends on a black screen, hold the
+  power button to turn the PS5 off and run the loader; `sudo systemctl disable ps5-kexec-load` turns warm restarts off.
+- **Sleep:** from v1.4, a short press of the power button (or Steam's Sleep) puts the PS5 to sleep: screen off,
+  orange light, the game paused. A short press wakes it (one beep) and the game, network and Bluetooth continue.
+  The GPU stays on, so it saves little power. Thanks to Dasloh (ps5-linux-patches PR #4).
 - **VRR?** From v1.4, on TVs and monitors with **FreeSync** (switch it on in the TV's settings), where the PS5's
   HDMI chip supports it (`sudo dmesg | grep PS5.VRR` says `offered`). Then switch VRR on in Game Mode (Settings → Display) or in the desktop's display
   settings (Adaptive sync). If the picture flickers or goes black with VRR on, switch it off again.
