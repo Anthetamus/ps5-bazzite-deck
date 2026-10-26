@@ -37,9 +37,12 @@ sudo depmod -a "$K"
 
 echo "==> system settings"
 while read -r src dst mode; do [ -n "$src" ] && sudo install -Dm"${mode:-644}" "files/$src" "$dst"; done < FILES
-# Bluetooth services (Linux-only address, connectable); take effect at the next boot
+# Bluetooth services (Linux-only address, connectable, revive) and BlueZ pairing options;
+# take effect at the next boot
+[ -f bt-mainconf.sh ] && sudo bash bt-mainconf.sh /etc/bluetooth/main.conf
 sudo systemctl daemon-reload
-for u in ps5-bt-addr ps5-bt-connectable; do
+sudo udevadm control --reload 2>/dev/null || true
+for u in ps5-bt-addr ps5-bt-connectable ps5-bt-revive; do
   [ -f "/etc/systemd/system/$u.service" ] && sudo systemctl enable "$u.service" 2>/dev/null || true
 done
 sudo sed -i 's/ video=DP-1:1920x1080@60//' "$EFI/cmdline.txt"

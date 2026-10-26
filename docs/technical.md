@@ -61,3 +61,5 @@ Every release ships a `VERSIONS.md` with the exact pins: Bazzite image digest, k
 commits, builder commit and the kernel config changes. `CHANGELOG.md` tracks changes between releases.
 
 Bluetooth services (files/): `ps5-bt-addr` + `ps5-bt-addr.service` give the IW620 a Linux-only address (PR #9 by Dasloh, see docs/dualsense-profiles.md); `ps5-bt-connectable.service` makes the adapter accept incoming connections, so controllers reconnect by themselves.
+
+Bluetooth pairing and recovery (from the ps5-cachyos-setup project's packet traces): `tools/bt-mainconf.sh` sets BlueZ `JustWorksRepairing = always` and `PairableTimeout = 0` in `/etc/bluetooth/main.conf`; `files/ps5-hidp.conf` loads `hidp` at boot; `ps5-bt-revive.service` reloads `btusb` once if hci0 isn't up and powered ~30 s after boot (the IW620's Bluetooth side can hang after a warm reboot). The address and connectable services run again when hci0 re-appears (udev rule).

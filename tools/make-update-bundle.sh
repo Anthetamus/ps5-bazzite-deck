@@ -22,7 +22,7 @@ for f in $(sudo ls /mnt/ps5boot); do case "$f" in bzImage|initrd*) sudo cp "/mnt
 sudo cp -a "/mnt/ps5root/usr/lib/modules/$K" "$OUT/modules/"
 sudo test -f /mnt/ps5root/etc/modprobe.d/ps5-iw620.conf && sudo cp /mnt/ps5root/etc/modprobe.d/ps5-iw620.conf "$OUT/files/ps5-iw620-modprobe.conf"
 sudo chown -R "$(id -u):$(id -g)" "$OUT"
-cp "$SRC/files/99-ps5-iw620.conf" "$SRC/files/99-ps5-bt-phantom.rules" "$SRC/files/btusb-ps5.conf" "$SRC/files/ps5-stage-firmware-no-default-deps.conf" "$SRC/files/ps5-bt-addr" "$SRC/files/ps5-bt-addr.service" "$SRC/files/ps5-bt-connectable.service" "$OUT/files/"
+cp "$SRC/files/99-ps5-iw620.conf" "$SRC/files/99-ps5-bt-phantom.rules" "$SRC/files/btusb-ps5.conf" "$SRC/files/ps5-stage-firmware-no-default-deps.conf" "$SRC/files/ps5-bt-addr" "$SRC/files/ps5-bt-addr.service" "$SRC/files/ps5-bt-connectable.service" "$SRC/files/bluetooth-ps5-connectable.conf" "$SRC/files/99-ps5-bt-services.rules" "$SRC/files/ps5-bt-revive" "$SRC/files/ps5-bt-revive.service" "$SRC/files/ps5-hidp.conf" "$OUT/files/"
 # FILES: source, destination, optional mode (default 644)
 cat > "$OUT/FILES" << 'L'
 99-ps5-iw620.conf /etc/NetworkManager/conf.d/99-ps5-iw620.conf
@@ -33,9 +33,15 @@ ps5-iw620-modprobe.conf /etc/modprobe.d/ps5-iw620.conf
 ps5-bt-addr /usr/local/sbin/ps5-bt-addr 755
 ps5-bt-addr.service /etc/systemd/system/ps5-bt-addr.service
 ps5-bt-connectable.service /etc/systemd/system/ps5-bt-connectable.service
+bluetooth-ps5-connectable.conf /etc/systemd/system/bluetooth.service.d/10-ps5-connectable.conf
+99-ps5-bt-services.rules /etc/udev/rules.d/99-ps5-bt-services.rules
+ps5-bt-revive /usr/local/sbin/ps5-bt-revive 755
+ps5-bt-revive.service /etc/systemd/system/ps5-bt-revive.service
+ps5-hidp.conf /etc/modules-load.d/ps5-hidp.conf
 L
 echo "$REL" > "$OUT/VERSION"; echo "$K" > "$OUT/KERNEL"
 cp "$SRC/tools/update.sh" "$OUT/update.sh"
+cp "$SRC/tools/bt-mainconf.sh" "$OUT/bt-mainconf.sh"
 (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
 echo "efi files: $(ls "$OUT/efi" | tr '\n' ' ')  kernel: $K  modules: $(du -sh "$OUT/modules" | cut -f1)"
 tar -C "$B/output" -cJf "$OUT.tar.xz" "$NAME"

@@ -4,7 +4,6 @@ Before=bluetooth.service
 
 [Service]
 Type=oneshot
-RemainAfterExit=yes
 ExecStart=/usr/local/sbin/ps5-bt-addr
 
 [Install]

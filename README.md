@@ -89,7 +89,7 @@ All steps run on the PS5, booted from the USB, in a terminal (password `ps5`).
 
 2. **Install.** `m2_install.sh` looks for the boot partition at `/boot/efi`; Bazzite has it at `/efi`, so mount it there too:
    ```
-   sudo mkdir -p /boot/efi && sudo mount LABEL=boot /boot/efi
+   sudo mkdir -p /boot/efi && (mountpoint -q /boot/efi || sudo mount LABEL=boot /boot/efi)
    cd ~/ps5-linux-tools && sudo ./m2_install.sh --install /path/to/ps5-bazzite-deck.img
    ```
    - Use the extracted `.img`, not the `.7z` files.
@@ -98,7 +98,9 @@ All steps run on the PS5, booted from the USB, in a terminal (password `ps5`).
      terminal to insert its path.
    - **What you'll see:** `Formatting /dev/nvme0n1p1 …`, then `Copying files to M.2...`, and then **nothing for
      10–30 minutes** while it copies the system (there's no progress bar). Wait until it prints `Installation complete.`
-   - `Could not find active EFI partition at /boot/efi`: run the `mount` line above first (again after every reboot).
+   - **It asks for the password and then ends without printing anything:** `/boot/efi` isn't mounted, or it's mounted
+     several times (from running a plain `mount` line more than once). Reset it to one mount, then run the install again:
+     `while mountpoint -q /boot/efi; do sudo umount /boot/efi; done; sudo mount LABEL=boot /boot/efi`
    - `/dev/nvme0n1p1 not found`: the M.2 isn't prepared for Linux yet, see step 1 (`m2_init`).
 
 3. **Boot from the M.2 from now on:** point `cmdline.txt` at the M.2:
@@ -168,12 +170,14 @@ end with a space in front of it, or delete it again to undo.
 |---|---|---|
 | `amdgpu.force_1080p=1` | Only allows 1080p60 | Black or garbled picture you can't get past, e.g. after picking a resolution your display can't show (Game Mode and the desktop remember it). Remove it again once you've set a working resolution |
 | `hdmi.rearm=0` | Turns off the "picture comes back when the TV wakes up" fix | The picture flickers or goes black right after appearing, e.g. after re-plugging HDMI |
-| `hdmi.log_notify=1` | Logs every report from the HDMI chip and every picture setup | When asked for logs about a black screen |
 | `usbcore.autosuspend=-1` | USB devices never go to sleep | The USB drive/SSD disconnects, the system freezes, or there are I/O errors |
 | `usb-storage.quirks=xxxx:yyyy:u` | Turns off UAS for one USB drive (replace `xxxx:yyyy` with its ID from `lsusb`) | Same, with USB-C SSDs or enclosures: many have buggy UAS (resets, I/O errors, freezes) |
 | `amdgpu.ps5_cu_unlock=3` | Uses all 40 GPU compute units instead of 36. **Opt-in**, see [40 GPU compute units](#40-gpu-compute-units-optional) | You want more GPU power and your console's extra units work |
 
 Leave the entries that are already in `cmdline.txt` as they are, especially `lsm=…` (Game Mode needs it).
+
+**HDMI log for black-screen reports** (when asked for it): add ` dyndbg="file drivers/ps5/hdmi.c +p"` to
+`cmdline.txt`; after a black boot, `sudo dmesg | grep -e notify -e setup` shows what the HDMI chip reported.
 
 ### Common problems
 
@@ -218,6 +222,12 @@ and send `log.txt` from the small FAT32 partition in [Discord](https://discord.g
 - **One DualSense for the PS5 and Linux?** Yes, if the DualSense has pairing profiles (PS + a face button).
   Keep the PS5 pairing on one profile, and pair Linux on a different profile, for example PS + Square. You
   don't need a USB cable when you switch systems. From v1.4. See [docs/dualsense-profiles.md](docs/dualsense-profiles.md).
+- **Pairing a DualSense:** in Bluetooth settings, start the search, then hold **PS + Create** until the light
+  flashes quickly. A controller that's still connected can't enter pairing mode: switch it off first (hold PS for
+  10 seconds). After pairing it may disconnect once after a second; that's normal, press PS and it reconnects.
+  To reconnect later, just press PS: the controller connects to the PS5, not the other way round.
+- **Bluetooth gone after a restart:** from v1.4 the system revives the adapter by itself after ~30 seconds. If it
+  stays gone, power the PS5 off completely and run the loader again.
 - **DualSense over Bluetooth:** the speaker and headphone jack only work over USB. Don't plug in the USB cable while
   it's connected over Bluetooth; disconnect Bluetooth first.
 - **Video:** the PS5's GPU has no AV1 decoder. For YouTube in a browser, an extension like enhanced-h264ify gives
@@ -225,6 +235,9 @@ and send `log.txt` from the small FAT32 partition in [Discord](https://discord.g
 
 - **Does this touch my PS5's games or system?** No. Everything is on the USB drive.
 - **Can I dual-boot?** No. You run the jailbreak + loader each time you want Linux.
+- **VRR?** From v1.4, on TVs and monitors with **FreeSync** (switch it on in the TV's settings), where the PS5's
+  HDMI chip supports it (`sudo dmesg | grep PS5.VRR` says `offered`). Then switch VRR on in Game Mode (Settings → Display) or in the desktop's display
+  settings (Adaptive sync). If the picture flickers or goes black with VRR on, switch it off again.
 - **Which resolutions?** 1080p60, 1080p120, 1440p60, 1440p120 and 4K60, whenever your TV/monitor can do them. Other resolutions and refresh rates aren't possible through the PS5's HDMI chip.
 - **HDR?** Works on most consoles at 1080p60 and 4K60 (Game Mode → Settings → Display). If the picture looks wrong with HDR on, your console doesn't support it: switch it off.
 - **"Your PS5 wasn't turned off properly" after using Linux?** Normal and harmless.
