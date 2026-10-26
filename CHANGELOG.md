@@ -4,7 +4,7 @@ All notable changes to the images. Exact upstream versions are in each release's
 
 ## [Unreleased]
 
-## [v1.4.0] – 2026-10-<DD>
+## [v1.4.0] – 2026-10-26
 - **One DualSense for the PS5 and Linux** (PR #9 by Dasloh): `ps5-bt-addr.service` gives the IW620 Bluetooth chip a Linux-only address at boot (`80:..` becomes `82:..`), so a DualSense keeps its PS5 pairing on one profile and the Linux pairing on another. Original PS5 (IW620) only. Existing Linux pairings must be paired once again after the update. See `docs/dualsense-profiles.md`
 - **Controllers reconnect by themselves**: `ps5-bt-connectable.service` makes the Bluetooth adapter accept incoming connections (it started as non-connectable); it runs every time the adapter appears and after every bluetoothd start
 - The Linux-only address also reaches the kernel and bluetoothd (the adapter is re-initialised with bluetoothd stopped), and is set again whenever the adapter re-appears, so pairings are always stored under the same address
