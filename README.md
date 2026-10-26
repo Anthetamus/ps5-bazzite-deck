@@ -4,8 +4,7 @@ Turn your PS5 into a Steam console: this is [Bazzite](https://bazzite.gg) in Ste
 PlayStation 5. It boots straight into **Steam Gaming Mode** (the Steam Deck interface), and a full KDE
 desktop is one click away.
 
-It runs from a USB drive, started by **rmux's** [PS5 Linux loader](https://github.com/rmuxwashere/ps5-linux-loader/releases). There are several Linux loaders for the PS5;
-use rmux's.
+It runs from a USB drive, started by **rmux's** [PS5 Linux loader](https://github.com/rmuxwashere/ps5-linux-loader/releases).
 Your PS5 itself is not modified: unplug the drive and it's a normal PS5 again.
 
 **Download:** [Releases](../../releases) · **Help & testing:** [Discord](https://discord.gg/qGcuTgBBYU) · **Support the project:** [Ko-fi](https://ko-fi.com/vivalavent)
@@ -16,12 +15,11 @@ Your PS5 itself is not modified: unplug the drive and it's a normal PS5 again.
 - 4K60 over HDMI, with audio
 - Hardware video decoding
 - Wi-Fi, Ethernet and Bluetooth (DualSense works over Bluetooth)
-- PS5 Slim / models with MediaTek Wi-Fi: Wi-Fi works
+- Consoles with MediaTek Wi-Fi: Wi-Fi works
 
 ## What you need
 
-- Any PS5 model **except the PS5 Pro** (not supported), on a firmware the loader supports: see the
-  releases of **rmux's** [PS5 Linux loader](https://github.com/rmuxwashere/ps5-linux-loader/releases). Tested on firmware 13.60.
+- A PS5 on a firmware **rmux's** [PS5 Linux loader](https://github.com/rmuxwashere/ps5-linux-loader/releases) supports (see its releases). Tested on firmware 13.60.
 - A USB drive of **32 GB or more**, ideally an external SSD (much faster than a stick).
 - A PC to download and flash the image.
 - Optional but handy for the first setup: a USB keyboard.
@@ -155,7 +153,7 @@ Check the settings from [PS5 settings](#ps5-settings-do-this-first): **HDMI Devi
 **Supply Power to USB Ports: Always**. A reset or a firmware update of the PS5 can change them back.
 
 ### 2. Linux loader
-Use the latest loader for your firmware from **rmux's** [PS5 Linux loader releases](https://github.com/rmuxwashere/ps5-linux-loader/releases), not another loader. An older loader, or one for a
+Use the latest version of **rmux's** [PS5 Linux loader](https://github.com/rmuxwashere/ps5-linux-loader/releases) for your firmware. An older version, or one for a
 different firmware, typically ends up back in the PS5 menu or with no white light at all.
 
 ### 3. Boot options (`cmdline.txt`)
@@ -215,7 +213,7 @@ and send `log.txt` from the small FAT32 partition in [Discord](https://discord.g
 
 - **One DualSense for the PS5 and Linux?** Yes, if the DualSense has pairing profiles (PS + a face button).
   Keep the PS5 pairing on one profile, and pair Linux on a different profile, for example PS + Square. You
-  don't need a USB cable when you switch systems. Original PS5 only, from v1.4. See [docs/dualsense-profiles.md](docs/dualsense-profiles.md).
+  don't need a USB cable when you switch systems. From v1.4. See [docs/dualsense-profiles.md](docs/dualsense-profiles.md).
 - **DualSense over Bluetooth:** the speaker and headphone jack only work over USB. Don't plug in the USB cable while
   it's connected over Bluetooth; disconnect Bluetooth first.
 - **Video:** the PS5's GPU has no AV1 decoder. For YouTube in a browser, an extension like enhanced-h264ify gives
