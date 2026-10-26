@@ -40,10 +40,47 @@ def load():
             print(f"kexec_file_load failed: {os.strerror(e)} (errno {e}); normal reboot")
             return 0
         print(f"warm reboot ready: {d}/bzImage + initrd.img, cmdline from {d}/cmdline.txt")
+        reset_wireless()
+        reset_bluetooth_host()
     finally:
         if mounted:
             subprocess.run(["umount", d], capture_output=True)
     return 0
+
+def reset_wireless():
+    """A cold boot resets the Wi-Fi/Bluetooth chip; a warm reboot doesn't, and the IW620 then
+    sometimes comes up without Wi-Fi in the new kernel. Reset every wireless PCI device once
+    the kernel is loaded (a PCI function-level reset through sysfs), so the new kernel's driver
+    finds a fresh chip."""
+    for n in os.listdir("/sys/class/net"):
+        if not os.path.isdir(f"/sys/class/net/{n}/wireless"):
+            continue
+        pci_reset(os.path.realpath(f"/sys/class/net/{n}/device"), f"wireless ({n})")
+
+def pci_reset(dev, what):
+    """function-level reset of a PCI device through sysfs (dev is a /sys/devices/... path)"""
+    reset = f"{dev}/reset"
+    if not os.path.exists(reset):
+        print(f"{what}: {os.path.basename(dev)} has no reset method")
+        return
+    try:
+        with open(reset, "w") as f:
+            f.write("1")
+        print(f"reset {what} {os.path.basename(dev)} for the warm reboot")
+    except OSError as e:
+        print(f"could not reset {what} {os.path.basename(dev)}: {e}")
+
+def reset_bluetooth_host():
+    """The Bluetooth adapter hangs off a USB host controller; after warm reboots it sometimes
+    isn't enumerated at all any more (no hci0, 'Index list with 0 items'). Reset that host
+    controller too, so the new kernel enumerates the adapter afresh."""
+    for n in os.listdir("/sys/class/bluetooth") if os.path.isdir("/sys/class/bluetooth") else []:
+        dev = os.path.realpath(f"/sys/class/bluetooth/{n}/device")
+        while dev and dev != "/":
+            if os.path.exists(f"{dev}/vendor") and os.path.exists(f"{dev}/config"):   # a PCI device
+                pci_reset(dev, "Bluetooth USB host")
+                break
+            dev = os.path.dirname(dev)
 
 def unload():
     libc.syscall(SYS_kexec_file_load, ctypes.c_int(-1), ctypes.c_int(-1), ctypes.c_ulong(0),

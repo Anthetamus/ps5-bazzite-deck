@@ -14,12 +14,31 @@ done
 
 usb=$(readlink -f /sys/class/bluetooth/hci0/device/..)
 id="$(cat "$usb/idVendor" 2>/dev/null):$(cat "$usb/idProduct" 2>/dev/null)"
-if [ "$id" != "1286:2059" ]; then
-    echo "Bluetooth chip $id is not the PS5's Marvell IW620, nothing to do"
-    exit 0
-fi
 
 kernel_addr() { btmgmt --index 0 info 2>/dev/null | awk '$1 == "addr" { print toupper($2); exit }'; }
+
+if [ "$id" = "0e8d:3603" ]; then
+    # MediaTek: the kernel can set this chip's address itself (btmgmt public-addr, powered off),
+    # so the new address is known to kernel and bluetoothd right away.
+    cur=$(kernel_addr); first=$((16#${cur%%:*}))
+    if [ $((first & 2)) -ne 0 ]; then echo "chip already uses the Linux address $cur"; exit 0; fi
+    new=$(printf '%02X' $((first | 2)))${cur#??}
+    was_active=0
+    [ "$(systemctl is-active bluetooth.service)" != inactive ] && was_active=1
+    [ "$was_active" = 1 ] && systemctl stop bluetooth.service
+    btmgmt --index 0 power off >/dev/null
+    out=$(btmgmt --index 0 public-addr "$new" 2>&1)
+    btmgmt --index 0 power on >/dev/null
+    kern=$(kernel_addr)
+    if [ "$kern" = "$new" ]; then echo "changing Bluetooth address $cur -> $new (MediaTek); kernel uses $kern"
+    else echo "MediaTek address change not possible ($out); staying on $cur"; fi
+    [ "$was_active" = 1 ] && systemctl start --no-block bluetooth.service
+    exit 0
+fi
+if [ "$id" != "1286:2059" ]; then
+    echo "Bluetooth chip $id is not one the Linux-only address works with, nothing to do"
+    exit 0
+fi
 
 btmgmt --index 0 power on >/dev/null
 

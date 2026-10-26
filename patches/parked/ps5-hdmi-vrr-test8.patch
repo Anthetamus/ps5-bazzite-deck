@@ -1,67 +1,123 @@
-PS5 HDMI: VRR test (hdmi.vrr_test=1), with Sony's VSync block    [ps5-bazzite-deck, test only]
+PS5 HDMI: VRR test 8 (hdmi.vrr_test=1)                     [ps5-bazzite-deck, test only]
 
-The parked VRR patch (offer VRR from the sink's FreeSync block, FreeSync
-InfoFrame through the bridge while VRR is on) plus what was missing: the
-stock OS writes the bridge's VSync block with other values when VRR is on
-(register dumps by hsgodd: 1047=30 6064=03 6c07=80 7214=80,02; stock off
-values are the ones Sony's configVSyncSettingFlava3 already wrote). amdgpu
-tells the bridge before each video setup whether the mode gets VRR, and the
-stream ignores MSA as amdgpu normally does for VRR (the bridge in VRR mode
-needs exactly that; without the VRR block it lost the timing, v1.4.0-rc1).
-Opt-in with hdmi.vrr_test=1, off by default; not for a release.
+Test 7 (hsgodd, from PS5 OS 13.60 dumps) brought the picture up: Sony's VSync
+block is written at every mode set AFTER the DP link is trained (1047=30
+6064=03 6c07=80 7214=80,02 with VRR on) and 6224=40,0f goes into
+configParamFlava3Pre; the bridge signals HDMI 2.1 VRR (VTEM) itself. Still
+blinking with VRR enabled. Test 8 = test 7's order, on the v1.4 candidate, with:
+  - VRR offered from the sink's HDMI Forum VRR range (FreeSync block as fallback),
+    the bridge in VRR mode only for modes amdgpu gives VRR,
+  - runtime switches for the blinking hypotheses, in /sys/module/hdmi/parameters/,
+    effective at the next mode set: vrr_ignore_msa (1), vrr_btr (1),
+    vrr_vtem_md (0: 0x1050..0x1053 as VTEM MD0..MD3 = VRR_EN, Base_Vfront,
+    Base_Refresh_Rate), vrr_vsif (0: AMD FreeSync InfoFrame),
+  - the VSync block line in dmesg shows every value written.
+Opt-in with hdmi.vrr_test=1; without it the build behaves like the candidate.
 ---
 
 --- a/drivers/ps5/hdmi.c
 +++ b/drivers/ps5/hdmi.c
-@@ -127,6 +127,7 @@
- static bool scrambling;
+@@ -167,6 +167,7 @@
+ }
  static bool hdr_enabled;
  static bool bt2020_enabled;
 +static void ps5_vrr_vsif_invalidate(bool slot_lost);
  
  /*
   * Debug log of every notification from the HDMI bridge and every picture
-@@ -648,19 +649,35 @@
+@@ -688,24 +689,75 @@
  	i2c_exec();
  }
  
+-static void configVSyncSettingFlava3(void)
+-{
 +/*
-+ * VRR test: the stock OS writes this VSync block with other values when VRR is
-+ * on (register dumps by hsgodd: 1047=30 6064=03 6c07=80 7214=80,02). The
-+ * bridge then follows the source's actual vertical timing; the source must
-+ * ignore-MSA (amdgpu's normal VRR setup) or the bridge re-negotiates the link.
++ * VRR test 8 (hdmi.vrr_test=1; hsgodd's PS5 OS 13.60 findings): the stock OS
++ * writes Sony's VSync block at every mode set AFTER the DP link is trained,
++ * with 1047=30 6064=03 6c07=80 7214=80,02 when VRR is on, and 6224=40,0f in
++ * configParamFlava3Pre. The bridge then signals HDMI 2.1 VRR (VTEM) itself;
++ * the PS5 doesn't use AMD FreeSync. Switches for the blinking still seen with
++ * test 7, all in /sys/module/hdmi/parameters/, effective at the next mode set:
++ *   vrr_ignore_msa (1)  amdgpu tells the bridge to ignore the stream's MSA
++ *   vrr_btr        (1)  amdgpu's low-framerate compensation (frame doubling)
++ *   vrr_vtem_md    (0)  hypothesis: 0x1050..0x1053 (zeroed in ParamPre) are the
++ *                       VTEM MD0..MD3 bytes: VRR_EN, Base_Vfront, Base_Refresh
++ *   vrr_vsif       (0)  also send the AMD FreeSync InfoFrame
 + */
 +static bool vrr_mode;
++static bool vrr_ignore_msa = true;
++module_param(vrr_ignore_msa, bool, 0644);
++static bool vrr_btr = true;
++module_param(vrr_btr, bool, 0644);
++static bool vrr_vtem_md;
++module_param(vrr_vtem_md, bool, 0644);
++static bool vrr_vsif;
++module_param(vrr_vsif, bool, 0644);
 +
- static void configVSyncSettingFlava3(void)
- {
++bool ps5_hdmi_vrr_ignore_msa(void) { return vrr_ignore_msa; }
++EXPORT_SYMBOL(ps5_hdmi_vrr_ignore_msa);
++bool ps5_hdmi_vrr_btr(void) { return vrr_btr; }
++EXPORT_SYMBOL(ps5_hdmi_vrr_btr);
++
++static void configVSyncSettingFlava3(bool vrr, const struct drm_display_mode *mode)
++{
++	u8 md[4] = { 0 };
++
++	if (vrr && vrr_vtem_md && mode) {
++		int vfront = mode->vsync_start - mode->vdisplay;
++		int hz = drm_mode_vrefresh(mode);
++
++		md[0] = 0x01;					/* VRR_EN */
++		md[1] = clamp(vfront, 0, 255);			/* Base_Vfront */
++		md[2] = (hz >> 8) & 0x03;			/* Base_Refresh_Rate[9:8] */
++		md[3] = hz & 0xff;				/* Base_Refresh_Rate[7:0] */
++	}
++
  	i2c_init(1);
  	i2c_begin_block();
 -	i2c_write(0x1047, 0x00);
 -	i2c_write(0x6064, 0x01);
-+	i2c_write(0x1047, vrr_mode ? 0x30 : 0x00);
-+	i2c_write(0x6064, vrr_mode ? 0x03 : 0x01);
++	i2c_write(0x1047, vrr ? 0x30 : 0x00);
++	i2c_write(0x6064, vrr ? 0x03 : 0x01);
  	i2c_write_data(0x600c, (u8[]){0x01, 0x00}, 2);
 -	i2c_write(0x6c07, 0x00);
 -	i2c_write_data(0x7214, (u8[]){0x00, 0x00}, 2);
-+	i2c_write(0x6c07, vrr_mode ? 0x80 : 0x00);
-+	i2c_write_data(0x7214, vrr_mode ? (u8[]){0x80, 0x02} : (u8[]){0x00, 0x00}, 2);
++	i2c_write(0x6c07, vrr ? 0x80 : 0x00);
++	i2c_write_data(0x7214, vrr ? (u8[]){0x80, 0x02} : (u8[]){0x00, 0x00}, 2);
++	if (vrr && vrr_vtem_md)
++		i2c_write_data(0x1050, md, 4);
  	i2c_end_block();
  	i2c_exec();
-+	pr_info("VSync block: VRR %s\n", vrr_mode ? "on (1047=30 6064=03 6c07=80 7214=80,02)" : "off");
- }
- 
++	pr_info("VSync block: VRR %s (ignore_msa %d, btr %d, vtem_md %d: %*ph, vsif %d)\n",
++		vrr ? "on" : "off", vrr_ignore_msa, vrr_btr, vrr_vtem_md, 4, md, vrr_vsif);
++}
++
 +/* amdgpu says before each video setup whether the mode gets VRR */
 +void sceHdmiSetVrrMode(bool on)
 +{
 +	vrr_mode = on && hdmi_ic_type == HDMI_IC_TYPE_FLAVA3;
-+}
+ }
 +EXPORT_SYMBOL(sceHdmiSetVrrMode);
-+
+ 
  static void configParamFlava3Pre(void)
  {
  	i2c_init(1);
-@@ -951,6 +968,7 @@
+ 	i2c_begin_block();
+-	i2c_write_data(0x6224, (u8[]){0x00, 0x01}, 2);
++	i2c_write_data(0x6224, vrr_mode ? (u8[]){0x40, 0x0f} : (u8[]){0x00, 0x01}, 2);	/* stock VRR value */
+ 	i2c_write_data(0x1047, (u8[]){0x00}, 1);
+ 	i2c_write_data(0x1050, (u8[]){0x00, 0x00, 0x00, 0x00}, 4);
+ 	i2c_write(0x7215, 0x00);
+@@ -980,6 +1032,8 @@
+ 	configParamFlava3Pre();
+ 	configLinkTrainingFlava3();
+ 	setHdmiBasicVideoConfigFlava3(mode, bpc, yuv422);
++	/* as the stock OS: Sony's VSync block after the link training and basic config */
++	configVSyncSettingFlava3(vrr_mode, mode);
+ 	initHdmiPhyForFlava3_1st();
+ 	initHdmiPhyForFlava3_2nd();
+ 	mask_7203();
+@@ -1009,6 +1063,7 @@
  		i2c_mask(0x7203, 0x01, 0x01);
  		i2c_write(0x7204, 0x01);
  		i2c_waitclear(0x7204, 0x01);
@@ -69,7 +125,7 @@ Opt-in with hdmi.vrr_test=1, off by default; not for a release.
  	}
  	if (bt2020 || bt2020_enabled) {
  		/* Set colorimetry */
-@@ -1174,6 +1192,7 @@
+@@ -1232,12 +1287,13 @@
  
  void sceHdmiInitVideoConfig(void)
  {
@@ -77,7 +133,14 @@ Opt-in with hdmi.vrr_test=1, off by default; not for a release.
  	stopHdcpHw();
  	if (hdmi_ic_type == HDMI_IC_TYPE_FLAVA3) {
  		sceDisableEncode();
-@@ -1188,6 +1207,7 @@
+ 		initIsrForFlava3();
+ 		initDpForFlava3();
+-		configVSyncSettingFlava3();
++		configVSyncSettingFlava3(false, NULL);	/* stock values at init; the mode set writes the VRR ones */
+ 	} else {
+ 		initVerde();
+ 	}
+@@ -1246,6 +1302,7 @@
  
  void sceHdmiSetVideoConfig(const struct drm_display_mode *mode, unsigned int bpc, bool yuv422)
  {
@@ -85,7 +148,7 @@ Opt-in with hdmi.vrr_test=1, off by default; not for a release.
  	pr_debug("setup: %s@%d %d kHz vic %d, %u bpc %s\n", mode->name,
  		 drm_mode_vrefresh(mode), mode->clock, drm_match_cea_mode(mode),
  		 bpc, yuv422 ? "YCbCr 4:2:2" : "RGB");
-@@ -1332,6 +1352,169 @@
+@@ -1390,6 +1447,175 @@
  EXPORT_SYMBOL(isHdmiModeValid);
  
  /*
@@ -136,7 +199,7 @@ Opt-in with hdmi.vrr_test=1, off by default; not for a release.
 +
 +int ps5_hdmi_vrr_range(int *min_hz, int *max_hz, const char **src)
 +{
-+	int amd_min = 0, amd_max = 0;
++	int amd_min = 0, amd_max = 0, hf_min = 0, hf_max = 0;
 +	int ext, n, i, len;
 +	unsigned long flags;
 +	u8 *e;
@@ -171,17 +234,23 @@ Opt-in with hdmi.vrr_test=1, off by default; not for a release.
 +				/* AMD FreeSync VSDB: version, flags, min, max */
 +				amd_min = p[5];
 +				amd_max = p[6];
++			} else if (p[0] == 0xd8 && p[1] == 0x5d && p[2] == 0xc4 && l >= 10) {
++				/* HDMI Forum VSDB: VRRmin [5:0], VRRmax [9:0] */
++				hf_min = p[8] & 0x3f;
++				hf_max = ((p[8] & 0xc0) << 2) | p[9];
 +			}
 +		}
 +	}
 +
 +	kfree(e);
 +
-+	if (amd_min < 1 || amd_max <= amd_min + 10)
++	if (hf_min >= 1 && hf_max > hf_min + 10) {
++		*min_hz = hf_min; *max_hz = hf_max; *src = "HDMI VRR range";
++	} else if (amd_min >= 1 && amd_max > amd_min + 10) {
++		*min_hz = amd_min; *max_hz = amd_max; *src = "FreeSync block";
++	} else {
 +		return -ENODATA;
-+	*min_hz = amd_min;
-+	*max_hz = amd_max;
-+	*src = "FreeSync block";
++	}
 +	return 0;
 +}
 +EXPORT_SYMBOL(ps5_hdmi_vrr_range);
@@ -211,7 +280,7 @@ Opt-in with hdmi.vrr_test=1, off by default; not for a release.
 +	u8 sum = 0;
 +	int i;
 +
-+	if (hdmi_ic_type != HDMI_IC_TYPE_FLAVA3 || hdr_enabled)
++	if (hdmi_ic_type != HDMI_IC_TYPE_FLAVA3 || hdr_enabled || !vrr_vsif)
 +		return;
 +	if (key == vrr_vsif_last)
 +		return;
@@ -255,22 +324,24 @@ Opt-in with hdmi.vrr_test=1, off by default; not for a release.
   * The modes the HDMI bridge has a setup for, in their standard timings:
   * 1080p60 (VIC 16), 1080p120 (VIC 63), 2160p60 (VIC 97), 1440p60 (VESA DMT
   * reduced blanking) and, on FLAVA3, 1440p120 (CVT-RB). The sink's own
-@@ -1746,6 +1929,7 @@
- 		if (msg->data[1] == 0x02) {
+@@ -1805,6 +2031,7 @@
  			fix_edid(&msg->data[4]);
  			real_edid = drm_edid_alloc(&msg->data[4], *(u16 *)&msg->data[2]);
+ 			sink_scdc = edid_has_scdc(&msg->data[4], *(u16 *)&msg->data[2]);
 +			ps5_vrr_save_edid(msg);
  			pr_info("got real edid\n");
  			sceHdmiOutputMode();
  
 --- a/include/linux/ps5.h
 +++ b/include/linux/ps5.h
-@@ -72,6 +72,10 @@
+@@ -72,6 +72,12 @@
  void ps5_hdmi_fixup_timing(struct drm_display_mode *mode);
  struct drm_connector;
  int ps5_hdmi_add_modes(struct drm_connector *connector);
 +bool ps5_hdmi_vrr_possible(void);
 +void sceHdmiSetVrrMode(bool on);
++bool ps5_hdmi_vrr_ignore_msa(void);
++bool ps5_hdmi_vrr_btr(void);
 +int ps5_hdmi_vrr_range(int *min_hz, int *max_hz, const char **src);
 +void sceHdmiSetFreesyncInfoframe(u8 flags, u8 min_hz, u8 max_hz);
  
@@ -345,12 +416,26 @@ Opt-in with hdmi.vrr_test=1, off by default; not for a release.
  		dm_helpers_read_mccs_caps(adev->dm.dc->ctx, amdgpu_dm_connector->dc_link, sink);
 --- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_freesync.c
 +++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_freesync.c
-@@ -129,12 +129,22 @@
+@@ -37,6 +37,9 @@
+ #include "amdgpu_dm_freesync.h"
+ #include "dm_helpers.h"
+ #include "modules/inc/mod_freesync.h"
++#ifdef CONFIG_X86_PS5
++#include <linux/ps5.h>
++#endif
+ 
+ bool amdgpu_dm_is_dc_timing_adjust_needed(struct dm_crtc_state *old_state,
+ 					  struct dm_crtc_state *new_state)
+@@ -129,13 +132,31 @@
  					vrefresh <= aconnector->max_vfreq;
  
  	if (new_crtc_state->vrr_supported) {
-+		/* PS5 VRR test: with the bridge's VSync block in VRR mode, ignore-MSA is what it needs */
++#ifdef CONFIG_X86_PS5
++		/* PS5 VRR test 8: switchable (hdmi.vrr_ignore_msa) */
++		new_crtc_state->stream->ignore_msa_timing_param = ps5_hdmi_vrr_ignore_msa();
++#else
  		new_crtc_state->stream->ignore_msa_timing_param = true;
++#endif
  		fs_vid_mode = new_crtc_state->freesync_config.state == VRR_STATE_ACTIVE_FIXED;
  
  		config.min_refresh_in_uhz = aconnector->min_vfreq * 1000000;
@@ -365,6 +450,11 @@ Opt-in with hdmi.vrr_test=1, off by default; not for a release.
 +#else
  		config.vsif_supported = true;
 +#endif
++#ifdef CONFIG_X86_PS5
++		config.btr = ps5_hdmi_vrr_btr();	/* VRR test 8: switchable (hdmi.vrr_btr) */
++#else
  		config.btr = true;
++#endif
  
  		if (fs_vid_mode) {
+ 			config.state = VRR_STATE_ACTIVE_FIXED;

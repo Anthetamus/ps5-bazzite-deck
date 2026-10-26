@@ -221,7 +221,8 @@ and send `log.txt` from the small FAT32 partition in [Discord](https://discord.g
 
 - **One DualSense for the PS5 and Linux?** Yes, if the DualSense has pairing profiles (PS + a face button).
   Keep the PS5 pairing on one profile, and pair Linux on a different profile, for example PS + Square. You
-  don't need a USB cable when you switch systems. From v1.4. See [docs/dualsense-profiles.md](docs/dualsense-profiles.md).
+  don't need a USB cable when you switch systems. From v1.4 (the service log shows `changing Bluetooth address`).
+  See [docs/dualsense-profiles.md](docs/dualsense-profiles.md).
 - **Pairing a DualSense:** in Bluetooth settings, start the search, then hold **PS + Create** until the light
   flashes quickly. A controller that's still connected can't enter pairing mode: switch it off first (hold PS for
   10 seconds). After pairing it may disconnect once after a second; that's normal, press PS and it reconnects.

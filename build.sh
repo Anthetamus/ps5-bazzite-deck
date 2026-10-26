@@ -69,6 +69,7 @@ git -C work/linux73 apply "$SRC/patches/ps5-hdmi-link-lock.patch"        # full-
 git -C work/linux73 apply "$SRC/patches/ps5-gpu-overlay.patch"           # GPU load (gpu_busy_percent) and temperature (hwmon) for the Steam overlay / MangoHud
 git -C work/linux73 apply "$SRC/patches/ps5-hdmi-cec-upstream53.patch"    # HDMI CEC (TV remote, one-touch play), upstream #53 ported to 7.3
 git -C work/linux73 apply "$SRC/patches/ps5-hdmi-sleep-mute.patch"        # mute and leave HDR when the output goes down (sleep)
+git -C work/linux73 apply "$SRC/patches/ps5-hdmi-scdc-source-version.patch" # SCDC Source Version at every setup: TVs keep their HDMI 2.x EDID (issue #11)
 cp work/ps5-linux-patches/.config work/linux73/.config
 cp -r work/ps5-linux-patches work/linux73/ps5-linux-patches
 grep -E '^CONFIG_LSM=|^CONFIG_DEBUG_INFO_BTF=|^CONFIG_MT7921E=|^CONFIG_MODULE_ALLOW_BTF_MISMATCH=' work/linux73/.config
@@ -132,7 +133,7 @@ cat > output/VERSIONS.md << V
 | NXP mwifiex base driver | \`lf-6.18.2_1.0.0\` |
 | IW620 firmware | not in the image; pcieuartiw620_combo_v1.bin is staged at boot from the loader's boot partition (ps5-stage-firmware) |
 | Kernel config changes | CONFIG_LSM += bpf, CONFIG_DEBUG_INFO_BTF=y, CONFIG_MT7921E=m, CONFIG_MODULE_ALLOW_BTF_MISMATCH=y |
-| Extra kernel patches | ps5-bluetooth, ps5-hdmi-upstream, ps5-hdmi-rearm-pr46, ps5-hdmi-output-fixes, ps5-hdmi-modes, ps5-hdmi-debug-log, ps5-hdmi-link-lock, ps5-gpu-overlay, ps5-hdmi-cec-upstream53, ps5-hdmi-sleep-mute (patches/) |
+| Extra kernel patches | ps5-bluetooth, ps5-hdmi-upstream, ps5-hdmi-rearm-pr46, ps5-hdmi-output-fixes, ps5-hdmi-modes, ps5-hdmi-debug-log, ps5-hdmi-link-lock, ps5-gpu-overlay, ps5-hdmi-cec-upstream53, ps5-hdmi-sleep-mute, ps5-hdmi-scdc-source-version (patches/) |
 | Image config | NetworkManager stable MAC (IW620), MediaTek BT udev + modprobe, ps5-stage-firmware boot-cycle drop-in, IW620 Linux-only BT address (ps5-bt-addr), BT connectable, BT revive, hidp preload, BlueZ pairing options, warm reboot into Linux (kexec) (files/, tools/bt-mainconf.sh), SSH enabled |
 | cmdline.txt | $(sed 's/__DISTRO__/bazzite-deck/' boot/cmdline.txt) |
 V
