@@ -1,6 +1,6 @@
 #!/bin/bash
 # In-place update of a PS5 Bazzite Deck install (v1.0.3 or newer) to the latest release,
-# or to a given version. Run on the PS5 (terminal or SSH):
+# or to a given version or test build. Run on the PS5 (terminal or SSH):
 #   bash <(curl -fsSL https://raw.githubusercontent.com/VivaLaVent/ps5-bazzite-deck/main/tools/update-latest.sh)
 #   bash <(curl -fsSL https://raw.githubusercontent.com/VivaLaVent/ps5-bazzite-deck/main/tools/update-latest.sh) v1.2.0
 set -euo pipefail
@@ -11,8 +11,9 @@ if [ -z "$V" ]; then
   LATEST=$(curl -fsSLI -o /dev/null -w '%{url_effective}' "https://github.com/$REPO/releases/latest") ||
     { echo "STOP: can't reach GitHub (network?)"; exit 1; }
   V=${LATEST##*/}
+  case "$V" in v[0-9]*) ;; *) echo "STOP: couldn't find the latest version (got '$V')"; exit 1 ;; esac
 fi
-case "$V" in v[0-9]*) ;; *) echo "STOP: couldn't find the latest version (got '$V')"; exit 1 ;; esac
+case "$V" in ""|*[!A-Za-z0-9._-]*) echo "STOP: invalid version '$V'"; exit 1 ;; esac
 
 CUR=$(cat /etc/ps5-bazzite-deck-version 2>/dev/null || echo "unknown (v1.0.6 or older)")
 echo "installed: $CUR"
