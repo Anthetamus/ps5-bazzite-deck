@@ -243,9 +243,9 @@ and send `log.txt` from the small FAT32 partition in [Discord](https://discord.g
 - **Sleep:** from v1.4, a short press of the power button (or Steam's Sleep) puts the PS5 to sleep: screen off,
   orange light, the game paused. A short press wakes it (one beep) and the game, network and Bluetooth continue.
   The GPU stays on, so it saves little power. Thanks to Dasloh (ps5-linux-patches PR #4).
-- **VRR?** From v1.4, on TVs and monitors with **FreeSync** (switch it on in the TV's settings), where the PS5's
-  HDMI chip supports it (`sudo dmesg | grep PS5.VRR` says `offered`). Then switch VRR on in Game Mode (Settings → Display) or in the desktop's display
-  settings (Adaptive sync). If the picture flickers or goes black with VRR on, switch it off again.
+- **VRR?** Not possible. The PS5's HDMI chip locks the frame timing itself, so a variable refresh rate from the GPU
+  doesn't get through (tested in the v1.4 pre-releases: the picture shifts and blinks). It would need Sony's own chip
+  setup, which isn't known.
 - **Which resolutions?** 1080p60, 1080p120, 1440p60, 1440p120 and 4K60, whenever your TV/monitor can do them. Other resolutions and refresh rates aren't possible through the PS5's HDMI chip.
 - **HDR?** Works on most consoles at 1080p60 and 4K60 (Game Mode → Settings → Display). If the picture looks wrong with HDR on, your console doesn't support it: switch it off.
 - **"Your PS5 wasn't turned off properly" after using Linux?** Normal and harmless.

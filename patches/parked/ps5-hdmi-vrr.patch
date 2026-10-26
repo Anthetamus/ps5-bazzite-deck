@@ -1,3 +1,10 @@
+PARKED, not applied. Result of v1.4.0-rc2 (26 Oct 2026, direct on a FreeSync monitor,
+ObsessiveRug): with VRR on, the picture shifts, blinks and scrolls; no VRR signal
+detected. The HDMI bridge locks the frame timing itself, so a variable timing from
+the GPU doesn't get through, with or without the FreeSync InfoFrame. VRR needs
+Sony's own bridge setup, which is unknown. Kept for that day: the FreeSync
+InfoFrame path (bridge slot 0x7e40) and the range parser work.
+
 PS5 HDMI: VRR (FreeSync) through the HDMI bridge           [ps5-bazzite-deck]
 
 Offered when the sink's EDID has an AMD FreeSync block (FLAVA3 only), used
