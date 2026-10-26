@@ -60,3 +60,4 @@ Releases are tagged `vMAJOR.MINOR.PATCH`:
 Every release ships a `VERSIONS.md` with the exact pins: Bazzite image digest, kernel tag, patch repo
 commits, builder commit and the kernel config changes. `CHANGELOG.md` tracks changes between releases.
 
+Bluetooth services (files/): `ps5-bt-addr` + `ps5-bt-addr.service` give the IW620 a Linux-only address (PR #9 by Dasloh, see docs/dualsense-profiles.md); `ps5-bt-connectable.service` makes the adapter accept incoming connections, so controllers reconnect by themselves.

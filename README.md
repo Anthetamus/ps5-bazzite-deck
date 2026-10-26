@@ -204,6 +204,10 @@ and send `log.txt` from the small FAT32 partition in [Discord](https://discord.g
 
 ## FAQ
 
+- **One DualSense for the PS5 and Linux?** Yes, if the DualSense has pairing profiles (PS + a face button).
+  Keep the PS5 pairing on one profile, and pair Linux on a different profile, for example PS + Square. You
+  don't need a USB cable when you switch systems. Original PS5 only. See [docs/dualsense-profiles.md](docs/dualsense-profiles.md).
+
 - **Does this touch my PS5's games or system?** No. Everything is on the USB drive.
 - **Can I dual-boot?** No. You run the jailbreak + loader each time you want Linux.
 - **Which resolutions?** 1080p60, 1080p120, 1440p60, 1440p120 and 4K60, whenever your TV/monitor can do them. Other resolutions and refresh rates aren't possible through the PS5's HDMI chip.

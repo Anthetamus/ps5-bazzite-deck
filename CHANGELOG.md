@@ -4,6 +4,13 @@ All notable changes to the images. Exact upstream versions are in each release's
 
 ## [Unreleased]
 
+## [v1.4.0] – 2026-10-<DD>
+- **One DualSense for the PS5 and Linux** (PR #9 by Dasloh): `ps5-bt-addr.service` gives the IW620 Bluetooth chip a Linux-only address at boot (`80:..` becomes `82:..`), so a DualSense keeps its PS5 pairing on one profile and the Linux pairing on another. Original PS5 (IW620) only. Existing Linux pairings must be paired once again after the update. See `docs/dualsense-profiles.md`
+- **Controllers reconnect by themselves**: `ps5-bt-connectable.service` makes the Bluetooth adapter accept incoming connections (it started as non-connectable)
+- **VRR, experimental and off by default** (`hdmi.vrr=1`): the VRR range comes from the TV's FreeSync or HDMI VRR block
+- **DP link lock** (`hdmi.dp_link_lock`, on): the link from the GPU to the HDMI chip runs at full rate for every resolution
+- In-place update: `FILES` lines can have a third column, the file mode; the update enables the Bluetooth services
+
 ## [v1.3.1] – 2026-10-25
 - **Fix: 1440p picture a few lines too high** with displays whose 1440p timing uses positive vsync (e.g. LG TVs at 1440p120): the HDMI chip expects the standard polarity of both syncs (+hsync, -vsync) and moves the picture by the pulse width otherwise. 1440p timings now get the standard vertical polarity too (horizontal since v1.2.0)
 - Same drivers (modules) as v1.3.0; the change is built into the kernel

@@ -63,6 +63,7 @@ git -C work/linux73 apply "$SRC/patches/ps5-hdmi-rearm-pr46.patch"     # picture
 git -C work/linux73 apply "$SRC/patches/ps5-hdmi-output-fixes.patch"   # no FLAVA3 event sequences, re-arm same display only, 8-bit cap (HDR exception)
 git -C work/linux73 apply "$SRC/patches/ps5-hdmi-modes.patch"          # standard modes within the display limits, 1080p60 preferred, 1440p sync safety net, no 4:2:0-only
 git -C work/linux73 apply "$SRC/patches/ps5-hdmi-log-notify.patch"     # hdmi.log_notify=1: log bridge notifications and picture setups
+git -C work/linux73 apply "$SRC/patches/ps5-hdmi-experimental.patch"     # hdmi.vrr=1 (VRR, off by default), hdmi.dp_link_lock (full-rate DP link, on)
 cp work/ps5-linux-patches/.config work/linux73/.config
 cp -r work/ps5-linux-patches work/linux73/ps5-linux-patches
 grep -E '^CONFIG_LSM=|^CONFIG_DEBUG_INFO_BTF=|^CONFIG_MT7921E=|^CONFIG_MODULE_ALLOW_BTF_MISMATCH=' work/linux73/.config
@@ -87,6 +88,10 @@ sudo install -Dm644 "$SRC/files/99-ps5-iw620.conf" "$ROOT/etc/NetworkManager/con
 sudo install -Dm644 "$SRC/files/ps5-stage-firmware-no-default-deps.conf" "$ROOT/etc/systemd/system/ps5-stage-firmware.service.d/10-no-default-deps.conf"   # fixes boot ordering cycle (random missing services)
 sudo install -Dm644 "$SRC/files/99-ps5-bt-phantom.rules" "$ROOT/etc/udev/rules.d/99-ps5-bt-phantom.rules"      # MediaTek BT: phantom interfaces, no autosuspend
 sudo install -Dm644 "$SRC/files/btusb-ps5.conf" "$ROOT/etc/modprobe.d/btusb-ps5.conf"
+sudo install -Dm755 "$SRC/files/ps5-bt-addr" "$ROOT/usr/local/sbin/ps5-bt-addr"                                 # IW620: Linux-only BT address, DualSense keeps PS5 + Linux profiles (PR #9, Dasloh)
+sudo install -Dm644 "$SRC/files/ps5-bt-addr.service" "$ROOT/etc/systemd/system/ps5-bt-addr.service"
+sudo install -Dm644 "$SRC/files/ps5-bt-connectable.service" "$ROOT/etc/systemd/system/ps5-bt-connectable.service"   # adapter accepts incoming connections (controllers reconnect)
+sudo mkdir -p "$ROOT/etc/systemd/system/bluetooth.target.wants" && for u in ps5-bt-addr ps5-bt-connectable; do sudo ln -sf /etc/systemd/system/$u.service "$ROOT/etc/systemd/system/bluetooth.target.wants/$u.service"; done
 sudo mkdir -p "$ROOT/etc/systemd/system/multi-user.target.wants" && sudo ln -sf /usr/lib/systemd/system/sshd.service "$ROOT/etc/systemd/system/multi-user.target.wants/sshd.service"   # SSH on by default
 echo "$RELEASE" | sudo tee "$ROOT/etc/ps5-bazzite-deck-version" >/dev/null
 sync
@@ -109,8 +114,8 @@ cat > output/VERSIONS.md << V
 | NXP mwifiex base driver | \`lf-6.18.2_1.0.0\` |
 | IW620 firmware | not in the image; pcieuartiw620_combo_v1.bin is staged at boot from the loader's boot partition (ps5-stage-firmware) |
 | Kernel config changes | CONFIG_LSM += bpf, CONFIG_DEBUG_INFO_BTF=y, CONFIG_MT7921E=m, CONFIG_MODULE_ALLOW_BTF_MISMATCH=y |
-| Extra kernel patches | ps5-bluetooth, ps5-hdmi-upstream, ps5-hdmi-rearm-pr46, ps5-hdmi-output-fixes, ps5-hdmi-modes, ps5-hdmi-log-notify (patches/) |
-| Image config | NetworkManager stable MAC (IW620), MediaTek BT udev + modprobe, ps5-stage-firmware boot-cycle drop-in (files/), SSH enabled |
+| Extra kernel patches | ps5-bluetooth, ps5-hdmi-upstream, ps5-hdmi-rearm-pr46, ps5-hdmi-output-fixes, ps5-hdmi-modes, ps5-hdmi-log-notify, ps5-hdmi-experimental (patches/) |
+| Image config | NetworkManager stable MAC (IW620), MediaTek BT udev + modprobe, ps5-stage-firmware boot-cycle drop-in, IW620 Linux-only BT address (ps5-bt-addr), BT connectable (files/), SSH enabled |
 | cmdline.txt | $(sed 's/__DISTRO__/bazzite-deck/' boot/cmdline.txt) |
 V
 cat output/VERSIONS.md
