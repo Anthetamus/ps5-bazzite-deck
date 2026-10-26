@@ -69,3 +69,5 @@ Warm reboot (files/): `ps5-kexec` loads bzImage + initrd.img + cmdline.txt from 
 Upstreaming: `tools/upstream-pr.sh "<title>" patches/x.patch … [--submit]` regenerates rmux's `linux.patch` (a `git diff` of the kernel tree, 12-char abbrev, reproduced byte for byte) from v7.3 + upstream + our patch, so the PR's diff is only the change itself; dry run by default, `--submit` pushes a branch to your fork and opens the PR with the patch header as the description.
 
 Parked (`patches/parked/`, not applied): `ps5-hdmi-vrr` — VRR via DRR with the FreeSync InfoFrame through the bridge; the bridge doesn't pass a variable frame timing on (v1.4.0-rc2 test).
+
+HDMI CEC: upstream #53 (Slip) ported as `patches/ps5-hdmi-cec-upstream53.patch`: `drivers/ps5/ps5-cec.c` taken as is, the handler hook placed at the end of our `hdmi_notification_handler`, `X86_PS5` selects `CEC_CORE` (built in).

@@ -235,6 +235,9 @@ and send `log.txt` from the small FAT32 partition in [Discord](https://discord.g
 
 - **Does this touch my PS5's games or system?** No. Everything is on the USB drive.
 - **Can I dual-boot?** No. You run the jailbreak + loader each time you want Linux.
+- **TV remote (HDMI CEC):** from v1.4, the TV remote's arrows, OK and back work in Game Mode and on the desktop,
+  and at boot the PS5 turns the TV on and switches it to its input. To stop the latter, add
+  ` ps5-cec.one_touch_play=0` to `cmdline.txt`. Thanks to Slip (ps5-linux-patches #53).
 - **Restart:** from v1.4, a restart (Steam's Restart, the desktop's Restart, `sudo reboot`) goes **straight back into
   Linux** in about 20 seconds, without the PS5 system and the loader. To get back to the PS5 system, run
   `ps5-reboot-to-ps5` (terminal or SSH) or just power off. If a warm restart ever ends on a black screen, hold the
