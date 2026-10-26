@@ -64,6 +64,7 @@ git -C work/linux73 apply "$SRC/patches/ps5-hdmi-output-fixes.patch"   # no FLAV
 git -C work/linux73 apply "$SRC/patches/ps5-hdmi-modes.patch"          # standard modes within the display limits, 1080p60 preferred, 1440p sync safety net, no 4:2:0-only
 git -C work/linux73 apply "$SRC/patches/ps5-hdmi-log-notify.patch"     # hdmi.log_notify=1: log bridge notifications and picture setups
 git -C work/linux73 apply "$SRC/patches/ps5-hdmi-experimental.patch"     # hdmi.vrr=1 (VRR, off by default), hdmi.dp_link_lock (full-rate DP link, on)
+git -C work/linux73 apply "$SRC/patches/ps5-gpu-overlay.patch"           # GPU load (gpu_busy_percent) and temperature (hwmon) for the Steam overlay / MangoHud
 cp work/ps5-linux-patches/.config work/linux73/.config
 cp -r work/ps5-linux-patches work/linux73/ps5-linux-patches
 grep -E '^CONFIG_LSM=|^CONFIG_DEBUG_INFO_BTF=|^CONFIG_MT7921E=|^CONFIG_MODULE_ALLOW_BTF_MISMATCH=' work/linux73/.config
@@ -114,7 +115,7 @@ cat > output/VERSIONS.md << V
 | NXP mwifiex base driver | \`lf-6.18.2_1.0.0\` |
 | IW620 firmware | not in the image; pcieuartiw620_combo_v1.bin is staged at boot from the loader's boot partition (ps5-stage-firmware) |
 | Kernel config changes | CONFIG_LSM += bpf, CONFIG_DEBUG_INFO_BTF=y, CONFIG_MT7921E=m, CONFIG_MODULE_ALLOW_BTF_MISMATCH=y |
-| Extra kernel patches | ps5-bluetooth, ps5-hdmi-upstream, ps5-hdmi-rearm-pr46, ps5-hdmi-output-fixes, ps5-hdmi-modes, ps5-hdmi-log-notify, ps5-hdmi-experimental (patches/) |
+| Extra kernel patches | ps5-bluetooth, ps5-hdmi-upstream, ps5-hdmi-rearm-pr46, ps5-hdmi-output-fixes, ps5-hdmi-modes, ps5-hdmi-log-notify, ps5-hdmi-experimental, ps5-gpu-overlay (patches/) |
 | Image config | NetworkManager stable MAC (IW620), MediaTek BT udev + modprobe, ps5-stage-firmware boot-cycle drop-in, IW620 Linux-only BT address (ps5-bt-addr), BT connectable (files/), SSH enabled |
 | cmdline.txt | $(sed 's/__DISTRO__/bazzite-deck/' boot/cmdline.txt) |
 V

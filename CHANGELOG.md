@@ -10,6 +10,7 @@ All notable changes to the images. Exact upstream versions are in each release's
 - **VRR, experimental and off by default** (`hdmi.vrr=1`): the VRR range comes from the TV's FreeSync or HDMI VRR block
 - **DP link lock** (`hdmi.dp_link_lock`, on): the link from the GPU to the HDMI chip runs at full rate for every resolution
 - In-place update: `FILES` lines can have a third column, the file mode; the update enables the Bluetooth services
+- **GPU load and temperature in the Steam performance overlay** (and MangoHud): `gpu_busy_percent` from the GFX busy time meower already measures for its GPU frequency driver, and a GPU temperature sensor that reports the chip's one temperature (CPU and GPU are one die; the same reading as the CPU's Tctl). The power-management firmware that normally provides both belongs to Sony's firmware
 
 ## [v1.3.1] – 2026-10-25
 - **Fix: 1440p picture a few lines too high** with displays whose 1440p timing uses positive vsync (e.g. LG TVs at 1440p120): the HDMI chip expects the standard polarity of both syncs (+hsync, -vsync) and moves the picture by the pulse width otherwise. 1440p timings now get the standard vertical polarity too (horizontal since v1.2.0)
