@@ -96,6 +96,10 @@ All steps run on the PS5, booted from the USB, in a terminal (password `ps5`).
    - Keep the `.img` **on the USB system** (e.g. in `~/Downloads`), **not on the M.2**: the M.2 is wiped during the install.
    - Tip: type the command up to `--install ` (with the space), then drag the `.img` from the file manager into the
      terminal to insert its path.
+   - **What you'll see:** `Formatting /dev/nvme0n1p1 …`, then `Copying files to M.2...`, and then **nothing for
+     10–30 minutes** while it copies the system (there's no progress bar). Wait until it prints `Installation complete.`
+   - `Could not find active EFI partition at /boot/efi`: run the `mount` line above first (again after every reboot).
+   - `/dev/nvme0n1p1 not found`: the M.2 isn't prepared for Linux yet, see step 1 (`m2_init`).
 
 3. **Boot from the M.2 from now on:** point `cmdline.txt` at the M.2:
    ```
